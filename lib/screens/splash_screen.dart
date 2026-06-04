@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/screens/onboarding_screen.dart';
+import 'package:smart_shutter/screens/permissions_screen.dart';
 import 'package:smart_shutter/screens/main_layout.dart';
 import 'package:smart_shutter/core/theme.dart';
 
@@ -24,12 +25,21 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     
     final appState = Provider.of<AppState>(context, listen: false);
-    if (appState.hasSeenOnboarding) {
+    
+    // If permissions already shown, go to main layout
+    if (appState.hasSeenPermissionsFlow) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainLayout()),
       );
+    } else if (appState.hasSeenOnboarding) {
+      // If onboarding seen but permissions not shown, go to permissions
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PermissionsScreen()),
+      );
     } else {
+      // First time: show onboarding
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const OnboardingScreen()),
@@ -41,43 +51,18 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppTheme.backgroundStart, AppTheme.backgroundEnd],
-          ),
-        ),
+        decoration: AppTheme.gradientBg,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppTheme.brand.withOpacity(0.1),
-                      AppTheme.brand2.withOpacity(0.06),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppTheme.line),
+              const Text('📸', style: TextStyle(fontSize: 64)),
+              const SizedBox(height: 16),
+              Text(
+                'SmartShutter', 
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
-                ),
-                child: Column(
-                  children: [
-                    const Text('📸', style: TextStyle(fontSize: 44)),
-                    const SizedBox(height: 12),
-                    Text('SmartShutter', style: Theme.of(context).textTheme.headlineMedium),
-                    const SizedBox(height: 8),
-                    Text('AI-guided solo capture + compliant ID photos', 
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
                 ),
               ),
             ],

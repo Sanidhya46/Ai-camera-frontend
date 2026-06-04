@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/screens/main_layout.dart';
 
 class ResultsScreen extends StatelessWidget {
-  const ResultsScreen({super.key});
+  final String imagePath;
+
+  const ResultsScreen({
+    super.key,
+    required this.imagePath,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Your Best Shots', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-            Text('AI-selected results', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+            const Text('Your Best Shots', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
+            Text('AI-selected results', style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9))),
           ],
         ),
         backgroundColor: Colors.transparent,
@@ -21,68 +28,124 @@ class ResultsScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: AppTheme.ink),
       ),
       body: Container(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Container(
-              height: 220,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.line),
-                borderRadius: BorderRadius.circular(22),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [AppTheme.brand.withOpacity(0.07), AppTheme.brand2.withOpacity(0.07)],
-                ),
-              ),
-              alignment: Alignment.center,
-              child: const Text('Best shot preview', style: TextStyle(color: AppTheme.muted)),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+        decoration: AppTheme.gradientBg,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                _buildChip('Best light'),
-                _buildChip('Best pose'),
-                _buildChip('Sharpest image'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildThumb('Alt 1'),
-                _buildThumb('Alt 2'),
-                _buildThumb('Alt 3'),
-              ],
-            ),
-            const Spacer(),
-            Row(
-              children: [
+                // Best Shot Preview
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Retake'),
+                  child: Container(
+                    decoration: AppTheme.glassmorphicDecoration,
+                    clipBehavior: Clip.antiAlias,
+                    child: Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: imagePath.isNotEmpty
+                            ? ((kIsWeb || imagePath.startsWith('http') || imagePath.startsWith('blob:'))
+                                ? Image.network(
+                                    imagePath,
+                                    fit: BoxFit.cover,
+                                  )
+                                : File(imagePath).existsSync()
+                                    ? Image.file(
+                                        File(imagePath),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const Center(child: Text('No Preview Available')))
+                            : Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [AppTheme.brand.withOpacity(0.07), AppTheme.brand2.withOpacity(0.07)],
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.photo_library_outlined, size: 48, color: AppTheme.muted),
+                                    SizedBox(height: 12),
+                                    Text('Best shot preview', style: TextStyle(color: AppTheme.muted, fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MainLayout()),
-                        (route) => false,
-                      );
-                    },
-                    child: const Text('Save / Share'),
-                  ),
+                const SizedBox(height: 16),
+                
+                // AI tags
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildChip('Best light'),
+                    _buildChip('Best pose'),
+                    _buildChip('Sharpest image'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Thumbnail grid of alternatives
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildThumb('Alt 1'),
+                    _buildThumb('Alt 2'),
+                    _buildThumb('Alt 3'),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Text('Retake'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.brand.withOpacity(0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (_) => const MainLayout()),
+                              (route) => false,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: const Text('Save / Share', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -90,27 +153,30 @@ class ResultsScreen extends StatelessWidget {
 
   Widget _buildChip(String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.brand.withOpacity(0.1),
-        border: Border.all(color: AppTheme.brand.withOpacity(0.35)),
+        color: AppTheme.brand.withOpacity(0.12),
+        border: Border.all(color: AppTheme.brand.withOpacity(0.4), width: 1.2),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.brand)),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: AppTheme.brand, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
   Widget _buildThumb(String label) {
     return Container(
-      width: 100,
-      height: 125,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAFBFF),
-        border: Border.all(color: const Color(0xFFC9D2E3), style: BorderStyle.solid),
-        borderRadius: BorderRadius.circular(14),
-      ),
+      width: 90,
+      height: 110,
+      decoration: AppTheme.glassmorphicCustom(radius: 14),
       alignment: Alignment.center,
-      child: Text(label, style: const TextStyle(color: Color(0xFF9AA4B2), fontSize: 12)),
+      child: Text(
+        label,
+        style: const TextStyle(color: Color(0xFF9AA4B2), fontSize: 12, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
+

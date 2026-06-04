@@ -24,13 +24,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppTheme.backgroundStart, AppTheme.backgroundEnd],
-          ),
-        ),
+        decoration: AppTheme.gradientBg,
         child: SafeArea(child: _tabs[_currentIndex]),
       ),
       bottomNavigationBar: BottomNavigationBar(

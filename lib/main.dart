@@ -4,12 +4,15 @@ import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/screens/splash_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final appState = AppState();
+  await appState.init();
+  
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppState()),
+        ChangeNotifierProvider.value(value: appState),
       ],
       child: const SmartShutterApp(),
     ),

@@ -9,71 +9,129 @@ class OnboardingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Welcome', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-            Text('Two ways to use SmartShutter', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+            const Text(
+              'Welcome',
+              style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'Three ways to use SmartShutter',
+              style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9)),
+            ),
           ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, Color(0xFFFBFCFF)],
-          ),
-        ),
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildFeatureCard('1. Passport / ID mode', 'Take compliant photos at home with guided framing and export.'),
-            const SizedBox(height: 12),
-            _buildFeatureCard('2. Smart Solo mode', 'AI suggests poses, checks framing, and self-captures aesthetic shots.'),
-            const SizedBox(height: 12),
-            _buildFeatureCard('3. Your phone becomes the photographer', 'Set the phone on a tripod or stand, then follow live instructions.'),
-            const Spacer(),
-            Row(
+        decoration: AppTheme.gradientBg,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _goToPermissions(context),
-                    child: const Text('Skip'),
-                  ),
+                const SizedBox(height: 10),
+                _buildFeatureCard(
+                  '1. Passport / ID mode',
+                  'Take compliant photos at home with guided framing and export.',
+                  Icons.badge_outlined,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _goToPermissions(context),
-                    child: const Text('Continue'),
-                  ),
+                const SizedBox(height: 14),
+                _buildFeatureCard(
+                  '2. Smart Solo mode',
+                  'AI suggests poses, checks framing, and self-captures aesthetic shots.',
+                  Icons.psychology_outlined,
+                ),
+                const SizedBox(height: 14),
+                _buildFeatureCard(
+                  '3. Your phone becomes the photographer',
+                  'Set the phone on a tripod or stand, then follow live instructions.',
+                  Icons.camera_alt_outlined,
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _goToPermissions(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text('Skip'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.brand.withOpacity(0.25),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () => _goToPermissions(context),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFeatureCard(String title, String subtitle) {
+  Widget _buildFeatureCard(String title, String subtitle, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AppTheme.line),
-        borderRadius: BorderRadius.circular(16),
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.glassmorphicDecoration,
       width: double.infinity,
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.brand.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppTheme.brand, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.ink),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: AppTheme.muted.withOpacity(0.9), fontSize: 13, height: 1.3),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -86,3 +144,4 @@ class OnboardingScreen extends StatelessWidget {
     );
   }
 }
+
