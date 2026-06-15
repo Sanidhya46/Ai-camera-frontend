@@ -1,3 +1,8 @@
+/// Entry point of the SmartShutter application.
+/// This file initializes the Flutter app, sets up the global state management using Provider,
+/// and configures the theme and routing. It ensures all necessary bindings are initialized
+/// before the app runs and wraps the entire app with state providers for centralized state management.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';

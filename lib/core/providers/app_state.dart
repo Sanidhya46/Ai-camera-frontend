@@ -1,3 +1,8 @@
+/// Global state management provider for the SmartShutter app.
+/// Handles user preferences, premium status, setup selections, AI pose data, and photo capture history.
+/// Uses Provider pattern with ChangeNotifier and SharedPreferences for persistent data storage.
+/// Manages tab navigation, onboarding tracking, and all application-wide state that needs to be accessible across screens.
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -19,6 +24,9 @@ class AppState extends ChangeNotifier {
   // Capture history list
   List<Map<String, dynamic>> _captures = [];
 
+  // Tab navigation
+  int _selectedTabIndex = 0;
+
   bool get isPremium => _isPremium;
   bool get hasSeenOnboarding => _hasSeenOnboarding;
   bool get hasSeenPermissionsFlow => _hasSeenPermissionsFlow;
@@ -27,6 +35,7 @@ class AppState extends ChangeNotifier {
   String get selectedStyle => _selectedStyle;
   List<dynamic> get aiPoses => _aiPoses;
   List<Map<String, dynamic>> get captures => _captures;
+  int get selectedTabIndex => _selectedTabIndex;
 
   AppState();
 
@@ -94,6 +103,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setTabIndex(int index) {
+    _selectedTabIndex = index;
+    notifyListeners();
+  }
+
   Future<void> addCapture({
     required String path,
     required String type, // 'passport' or 'smart_solo'
@@ -101,8 +115,13 @@ class AppState extends ChangeNotifier {
     Map<String, dynamic>? complianceReport,
     List<String>? altPaths,
   }) async {
+    final now = DateTime.now();
+    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final serialNumber = _captures.length + 1;
+    final id = '$dateStr-$serialNumber';
+
     final newCapture = {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'id': id,
       'path': path,
       'type': type,
       'timestamp': DateTime.now().toIso8601String(),

@@ -1,3 +1,8 @@
+/// Review and export screen showing captured passport photo with compliance report.
+/// Displays the captured image, compliance status (compliant/non-compliant), detailed analysis report, and export/share options.
+/// Allows users to download the photo, share it, or retake the photo if it fails compliance checks.
+/// Final step in passport mode workflow before saving to gallery and returning to main app.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
@@ -10,7 +15,7 @@ import 'package:file_saver/file_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:smart_shutter/screens/passport/camera_screen.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 
 class PassportReviewScreen extends StatefulWidget {
   final String imagePath;
@@ -35,7 +40,9 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
     try {
       // Request storage permission
       PermissionStatus status;
-      if (Platform.isAndroid) {
+      if (kIsWeb) {
+        status = PermissionStatus.granted;
+      } else if (Platform.isAndroid) {
         status = await Permission.storage.request();
       } else if (Platform.isIOS) {
         status = await Permission.photos.request();
@@ -67,9 +74,9 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
       }
 
       if (bytes != null) {
-        if (Platform.isAndroid || Platform.isIOS) {
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
           // Save to gallery using image_gallery_saver
-          final result = await ImageGallerySaver.saveImage(
+          final result = await ImageGallerySaverPlus.saveImage(
             bytes,
             quality: 100,
             name: 'passport_photo_${DateTime.now().millisecondsSinceEpoch}',
@@ -79,9 +86,26 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('✅ Photo saved to Gallery'),
-                  backgroundColor: AppTheme.ok,
-                  duration: const Duration(seconds: 2),
+                  content: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: AppTheme.ok, shape: BoxShape.circle),
+                        child: const Icon(Icons.check, color: Colors.white, size: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(child: Text('Photo saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                    ],
+                  ),
+                  backgroundColor: AppTheme.brand.withOpacity(0.9),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: const BorderSide(color: Colors.black, width: 1.5),
+                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  elevation: 10,
+                  duration: const Duration(seconds: 3),
                 ),
               );
             }
@@ -99,9 +123,26 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('✅ Photo downloaded'),
-                backgroundColor: AppTheme.ok,
-                duration: const Duration(seconds: 2),
+                content: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: AppTheme.ok, shape: BoxShape.circle),
+                      child: const Icon(Icons.check, color: Colors.white, size: 16),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(child: Text('Photo downloaded', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                backgroundColor: AppTheme.brand.withOpacity(0.9),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: const BorderSide(color: Colors.black, width: 1.5),
+                ),
+                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                elevation: 10,
+                duration: const Duration(seconds: 3),
               ),
             );
           }

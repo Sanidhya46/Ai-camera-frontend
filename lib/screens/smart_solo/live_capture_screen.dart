@@ -1,3 +1,8 @@
+/// Live camera capture screen for Smart Solo mode with AI-guided pose instructions.
+/// Displays real-time camera feed with current pose instruction, countdown timer, and real-time AI feedback on framing.
+/// Automatically captures photos based on AI assessment of pose quality and framing compliance.
+/// Routes captured photos to results screen for preview and saving after countdown completes.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
@@ -130,153 +135,172 @@ class _LiveCaptureScreenState extends State<LiveCaptureScreen> {
     final activePose = appState.aiPoses.isNotEmpty ? appState.aiPoses[0]['instruction'] : 'Step back and follow AI instructions.';
 
     return Scaffold(
+      backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Smart Capture', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-            Text('Aesthetic Auto-Capture Live', style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9))),
+            Text('Smart Capture', style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+            Text('Aesthetic Auto-Capture Live', style: const TextStyle(fontSize: 12, color: Colors.white70), overflow: TextOverflow.ellipsis),
           ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Container(
-        decoration: AppTheme.gradientBg,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+      body: Column(
+        children: [
+          // 1. Camera View taking available space above UI
+          Expanded(
+            child: Stack(
               children: [
-                // Camera Grid View
-                Expanded(
-                  child: Container(
-                    decoration: AppTheme.glassmorphicCustom(radius: 24),
-                    clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (_isReady && _controller != null)
-                          Positioned.fill(
-                            child: AspectRatio(
-                              aspectRatio: _controller!.value.aspectRatio,
-                              child: CameraPreview(_controller!),
-                            ),
-                          )
-                        else
-                          const Center(child: CircularProgressIndicator(color: AppTheme.brand)),
-                        
-                        // Composition Grid Lines overlay
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: CompositionGridPainter(),
+                if (_isReady && _controller != null)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black,
+                      child: ClipRect(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          child: SizedBox(
+                            width: 100 * _controller!.value.aspectRatio,
+                            height: 100,
+                            child: CameraPreview(_controller!),
                           ),
                         ),
+                      ),
+                    ),
+                  )
+                else
+                  const Center(child: CircularProgressIndicator(color: AppTheme.brand)),
+                
+                // Composition Grid Lines overlay
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: CompositionGridPainter(),
+                  ),
+                ),
 
-                        // Countdown Overlay
-                        if (!_isCapturing)
-                          Center(
-                            child: Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                '$_countdown',
-                                style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Guidance Status Box
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF111827).withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.psychology_outlined, color: AppTheme.brand2, size: 22),
-                          const SizedBox(width: 8),
-                          Text(
-                            'AI Guidance System',
-                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                // Countdown Overlay
+                if (!_isCapturing)
+                  Center(
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        '✓ Face detected',
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
-                      ),
-                      Text(
-                        '✓ Ambient lighting ideal',
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
-                      ),
-                      Text(
-                        activePose,
-                        style: const TextStyle(color: AppTheme.brand2, fontSize: 13, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isCapturing ? 'Saving...' : 'Capturing in $_countdown seconds...',
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: const Text('Pause'),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$_countdown',
+                        style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _timer?.cancel();
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const ResultsScreen(imagePath: '')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: const Text('End Session', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
               ],
             ),
           ),
-        ),
+            
+          // 2. UI Overlay Area
+          Container(
+            color: Colors.black,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Guidance Status Box
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827).withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.psychology_outlined, color: AppTheme.brand2, size: 22),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'AI Guidance System',
+                                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '✓ Face detected',
+                            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                          ),
+                          Text(
+                            '✓ Ambient lighting ideal',
+                            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                          ),
+                          Text(
+                            activePose,
+                            style: const TextStyle(color: AppTheme.brand2, fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _isCapturing ? 'Saving...' : 'Capturing in $_countdown seconds...',
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              backgroundColor: Colors.black45,
+                              side: const BorderSide(color: Colors.white),
+                            ),
+                            child: const FittedBox(child: Text('Pause', style: TextStyle(color: Colors.white))),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              _timer?.cancel();
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => const ResultsScreen(imagePath: '')),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              backgroundColor: AppTheme.brand,
+                            ),
+                            child: const FittedBox(child: Text('End Session', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black))),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

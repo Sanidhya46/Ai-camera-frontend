@@ -1,3 +1,8 @@
+/// Guidelines screen explaining passport/ID photo requirements before capture.
+/// Displays country-specific photo standards with do's and don'ts for composition, lighting, attire, and appearance.
+/// Allows users to select between different passport types (India, UK, etc.) before proceeding to camera.
+/// Educational screen that ensures users understand requirements for compliant photo capture before starting.
+
 import 'package:flutter/material.dart';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/screens/passport/camera_screen.dart';
@@ -22,10 +27,12 @@ class _PassportGuidelinesScreenState extends State<PassportGuidelinesScreen> {
             const Text(
               'Passport / ID Photo',
               style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
               'Prepare before opening camera',
               style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9)),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -47,30 +54,32 @@ class _PassportGuidelinesScreenState extends State<PassportGuidelinesScreen> {
                         // Country dropdown selector
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: AppTheme.glassmorphicDecoration,
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedCountry,
-                              isExpanded: true,
-                              icon: const Icon(Icons.arrow_drop_down, color: AppTheme.brand),
-                              style: const TextStyle(color: AppTheme.ink, fontSize: 14, fontWeight: FontWeight.w600),
-                              onChanged: (String? newValue) {
-                                if (newValue != null) {
-                                  setState(() {
-                                    _selectedCountry = newValue;
-                                  });
-                                }
-                              },
-                              items: <String>[
-                                'India Passport',
-                                'UK Passport',
-                              ].map<DropdownMenuItem<String>>((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value),
-                                );
-                              }).toList(),
+                          child: PopupMenuButton<String>(
+                            initialValue: _selectedCountry,
+                            offset: const Offset(0, 40), // Force open below
+                            onSelected: (String newValue) {
+                              setState(() {
+                                _selectedCountry = newValue;
+                              });
+                            },
+                            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                              const PopupMenuItem<String>(
+                                value: 'India Passport',
+                                child: Text('India Passport'),
+                              ),
+                              const PopupMenuItem<String>(
+                                value: 'UK Passport',
+                                child: Text('UK Passport'),
+                              ),
+                            ],
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(_selectedCountry, style: const TextStyle(color: AppTheme.ink, fontSize: 14, fontWeight: FontWeight.w600)),
+                                const Icon(Icons.arrow_drop_down, color: AppTheme.brand),
+                              ],
                             ),
                           ),
                         ),
@@ -163,7 +172,7 @@ class _PassportGuidelinesScreenState extends State<PassportGuidelinesScreen> {
             child: Icon(icon, color: AppTheme.brand, size: 20),
           ),
           const SizedBox(width: 12),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.ink)),
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.ink))),
         ],
       ),
     );

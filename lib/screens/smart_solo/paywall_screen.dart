@@ -1,3 +1,8 @@
+/// Premium paywall screen for Smart Solo mode subscription.
+/// Displays feature benefits, pricing information, and handles premium subscription activation.
+/// Shows free trial details ($4.99/month after 7-day trial) and allows users to unlock premium features or dismiss.
+/// Entry point for monetization, guiding users to subscribe for AI-powered aesthetic photo capture capabilities.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';

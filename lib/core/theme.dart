@@ -1,3 +1,8 @@
+/// Centralized theme configuration for the SmartShutter app.
+/// This file defines all colors, gradients, and UI styling constants used across the application.
+/// It includes dark mode theme specifications, glassmorphic decorations, and typography settings.
+/// All visual design consistency is maintained through this single theme file, making it easy to update branding.
+
 import 'package:flutter/material.dart';
 
 class AppTheme {

@@ -1,3 +1,8 @@
+/// AI-generated shoot plan screen showing personalized pose suggestions for Smart Solo mode.
+/// Fetches AI-generated poses from backend based on user's goal, environment, and style preferences.
+/// Displays a list of numbered pose instructions with visual placeholders for each suggested shot.
+/// Allows users to review the plan before starting capture or go back to adjust setup preferences.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';

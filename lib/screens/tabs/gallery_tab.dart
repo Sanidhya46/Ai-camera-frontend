@@ -1,3 +1,8 @@
+/// Gallery tab displaying all captured photos organized by mode (Passport or Smart Solo).
+/// Provides filtering between modes, full-screen image viewing, download/export, and deletion capabilities.
+/// Handles both local files and web-based image storage with cross-platform support.
+/// Includes history clearing and individual photo management features for users to organize their work.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
@@ -9,7 +14,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 
 class GalleryTab extends StatefulWidget {
   const GalleryTab({super.key});
@@ -201,9 +206,9 @@ class _GalleryTabState extends State<GalleryTab> {
       }
 
       if (bytes != null) {
-        if (Platform.isAndroid || Platform.isIOS) {
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
           // Save to gallery
-          final result = await ImageGallerySaver.saveImage(
+          final result = await ImageGallerySaverPlus.saveImage(
             bytes,
             quality: 100,
             name: 'smartshutter_photo_${DateTime.now().millisecondsSinceEpoch}',
@@ -212,10 +217,27 @@ class _GalleryTabState extends State<GalleryTab> {
           if (result['isSuccess'] == true) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Photo saved to Gallery'),
-                  backgroundColor: AppTheme.ok,
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: AppTheme.ok, shape: BoxShape.circle),
+                        child: const Icon(Icons.check, color: Colors.white, size: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(child: Text('Photo saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                    ],
+                  ),
+                  backgroundColor: AppTheme.brand.withOpacity(0.9),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: const BorderSide(color: Colors.black, width: 1.5),
+                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  elevation: 10,
+                  duration: const Duration(seconds: 3),
                 ),
               );
             }
@@ -233,10 +255,27 @@ class _GalleryTabState extends State<GalleryTab> {
           
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Photo downloaded'),
-                backgroundColor: AppTheme.ok,
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: AppTheme.ok, shape: BoxShape.circle),
+                      child: const Icon(Icons.check, color: Colors.white, size: 16),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(child: Text('Photo downloaded', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                backgroundColor: AppTheme.brand.withOpacity(0.9),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: const BorderSide(color: Colors.black, width: 1.5),
+                ),
+                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                elevation: 10,
+                duration: const Duration(seconds: 3),
               ),
             );
           }

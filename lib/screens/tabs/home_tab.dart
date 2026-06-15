@@ -1,3 +1,8 @@
+/// Home tab displaying available capture modes and recent photos.
+/// Shows entry points for Passport/ID Photo mode (free) and Smart Solo Mode (premium).
+/// Displays recent captures as thumbnails and indicates premium status if user has an active subscription.
+/// Acts as the main hub where users choose their shooting mode and quickly access recent work.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
@@ -17,26 +22,29 @@ class HomeTab extends StatelessWidget {
     final isPremium = appState.isPremium;
     final recentCaptures = appState.captures.take(3).toList();
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'SmartShutter',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.ink),
-                  ),
-                  Text(
-                    'Choose how you want to shoot today',
-                    style: TextStyle(fontSize: 13, color: AppTheme.muted.withOpacity(0.9)),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SmartShutter',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.ink),
+                    ),
+                    Text(
+                      'Choose how you want to shoot today',
+                      style: TextStyle(fontSize: 13, color: AppTheme.muted.withOpacity(0.9)),
+                    ),
+                  ],
+                ),
               ),
               if (isPremium)
                 Container(
@@ -113,8 +121,12 @@ class HomeTab extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: recentCaptures.map((cap) {
                       final path = cap['path'] as String;
-                      final type = cap['type'] as String;
-                      return _buildThumb(path, type == 'passport' ? 'ID' : 'Solo');
+                      return GestureDetector(
+                        onTap: () {
+                          context.read<AppState>().setTabIndex(1); // Switch to Gallery tab
+                        },
+                        child: _buildThumb(path),
+                      );
                     }).toList(),
                   ),
               ],
@@ -122,7 +134,7 @@ class HomeTab extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildModeCard({
@@ -168,7 +180,7 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildThumb(String path, String label) {
+  Widget _buildThumb(String path) {
     final isUrlOrBlob = kIsWeb || path.startsWith('http') || path.startsWith('blob:');
     final exists = isUrlOrBlob || File(path).existsSync();
 
@@ -196,16 +208,6 @@ class HomeTab extends StatelessWidget {
             const Center(
               child: Icon(Icons.broken_image_outlined, color: AppTheme.muted, size: 20),
             ),
-          Container(
-            width: double.infinity,
-            color: Colors.black54,
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-            ),
-          ),
         ],
       ),
     );

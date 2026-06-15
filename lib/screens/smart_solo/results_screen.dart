@@ -1,3 +1,8 @@
+/// Results screen displaying captured Smart Solo mode photos with AI selection.
+/// Shows the best shots chosen by AI from the capture session with preview and action buttons.
+/// Provides options to save to gallery, use for passport photo generation, or continue capturing.
+/// Final workflow screen in Smart Solo mode that allows users to manage and process their aesthetic shots.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';

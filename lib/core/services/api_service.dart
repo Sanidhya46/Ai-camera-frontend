@@ -1,3 +1,8 @@
+/// Backend API integration service for the SmartShutter app.
+/// Handles all HTTP requests to the backend including photo uploads for compliance analysis, passport photo generation, downloads, and AI pose plan generation.
+/// Manages multipart file uploads, error handling, and timeouts for network operations.
+/// Provides methods to communicate with the Flask/FastAPI backend for biometric analysis and image processing.
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io' show File;

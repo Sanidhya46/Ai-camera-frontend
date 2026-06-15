@@ -1,3 +1,8 @@
+/// Setup screen for Smart Solo mode where users configure AI shooting preferences.
+/// Allows users to select shooting goal (Travel, Portrait, Fashion), environment (Outdoor, Beach, Nature), and style (Full body, Half body, Headshot).
+/// Uses user selections to generate personalized AI pose suggestions and capture instructions.
+/// Bridge screen between mode selection and AI plan generation for customized smart capturing experience.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';

@@ -1,3 +1,8 @@
+/// Profile tab displaying user settings, subscription status, and app preferences.
+/// Shows premium/free tier status with ability to toggle subscription, voice guidance mode, and passport specifications.
+/// Displays security information and lets users manage their account preferences and app settings.
+/// Serves as the control center for personalization and account management within SmartShutter.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';

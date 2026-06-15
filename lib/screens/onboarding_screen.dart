@@ -1,3 +1,8 @@
+/// Introduction screen that explains the three main features of SmartShutter to new users.
+/// Displays information about Passport/ID mode, Smart Solo mode, and tripod mode with visual icons.
+/// Acts as the first user-facing screen after splash, providing context before requesting permissions.
+/// Routes to permissions screen regardless of user choice to proceed with the app setup flow.
+
 import 'package:flutter/material.dart';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/screens/permissions_screen.dart';
@@ -32,7 +37,7 @@ class OnboardingScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                const SizedBox(height: 10),
+                const SizedBox(height: 28),
                 _buildFeatureCard(
                   '1. Passport / ID mode',
                   'Take compliant photos at home with guided framing and export.',
@@ -101,7 +106,7 @@ class OnboardingScreen extends StatelessWidget {
 
   Widget _buildFeatureCard(String title, String subtitle, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: AppTheme.glassmorphicDecoration,
       width: double.infinity,
       child: Row(
@@ -122,12 +127,12 @@ class OnboardingScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.ink),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.ink),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(color: AppTheme.muted.withOpacity(0.9), fontSize: 13, height: 1.3),
+                  style: TextStyle(color: AppTheme.muted.withOpacity(0.9), fontSize: 12, height: 1.3),
                 ),
               ],
             ),

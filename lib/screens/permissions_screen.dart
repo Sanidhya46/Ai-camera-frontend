@@ -1,3 +1,8 @@
+/// Permissions request screen shown during app setup to request camera and storage access.
+/// Displays required and optional permissions with status indicators showing what's granted.
+/// Handles platform-specific permission requests and gracefully manages both web and mobile environments.
+/// Routes to main layout after permissions are handled, marking the end of onboarding flow.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:permission_handler/permission_handler.dart';
@@ -148,22 +153,12 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                const SizedBox(height: 16),
                 _buildCheckRow('Camera access', true, _cameraGranted),
                 const SizedBox(height: 12),
                 _buildCheckRow('Photos / storage', false, _storageGranted),
                 const SizedBox(height: 12),
                 _buildCheckRow('Location', false, false),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: AppTheme.glassmorphicDecoration,
-                  child: Text(
-                    kIsWeb
-                        ? 'Testing on Web: Browser permissions will be handled automatically when the camera opens. Click "Allow & Continue" to proceed.'
-                        : 'Location improves scene-aware pose suggestions in Smart Solo mode. You can skip it and still use the app.',
-                    style: const TextStyle(color: AppTheme.muted, fontSize: 13, height: 1.45),
-                  ),
-                ),
                 const Spacer(),
                 SizedBox(
                   width: double.infinity,
@@ -199,14 +194,14 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
   Widget _buildCheckRow(String label, bool isRequired, bool isGranted) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: AppTheme.glassmorphicDecoration,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.ink),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.ink),
           ),
           if (isGranted)
             const Row(

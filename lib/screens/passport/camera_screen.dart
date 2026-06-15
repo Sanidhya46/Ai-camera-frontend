@@ -1,10 +1,19 @@
+/// Live camera capture screen for passport/ID photo mode.
+/// Displays real-time camera feed with a guide overlay for face alignment, captures photos, and sends them to backend for compliance analysis.
+/// Features auto-capture mode, manual capture, compliance feedback, and transitions to review screen after capture.
+/// Handles camera initialization, permissions, and integration with the API service for biometric analysis.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:smart_shutter/core/services/api_service.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
@@ -20,29 +29,46 @@ class PassportCameraScreen extends StatefulWidget {
 class _PassportCameraScreenState extends State<PassportCameraScreen> {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
+  int _selectedCameraIndex = -1;
   bool _isReady = false;
   bool _isProcessing = false;
   bool _isAutoMode = false;
+  int _loadingStep = 1;
   String _hintText = 'Align your face perfectly inside the guide overlay';
   Map<String, dynamic> _lastComplianceReport = {};
-  
+  Timer? _guideTimer;
+  bool _showGuide = true;
+
   final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
     _initCamera();
+    _guideTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _showGuide = false);
+    });
   }
 
   Future<void> _initCamera() async {
+    final status = await Permission.camera.request();
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Camera permission is required')),
+        );
+      }
+      return;
+    }
+
     _cameras = await availableCameras();
     if (_cameras.isNotEmpty) {
-      final frontCamera = _cameras.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.front,
-        orElse: () => _cameras.first,
-      );
+      if (_selectedCameraIndex == -1) {
+        _selectedCameraIndex = _cameras.indexWhere((c) => c.lensDirection == CameraLensDirection.front);
+        if (_selectedCameraIndex == -1) _selectedCameraIndex = 0;
+      }
       _controller = CameraController(
-        frontCamera, 
+        _cameras[_selectedCameraIndex],
         ResolutionPreset.high,
         enableAudio: false,
       );
@@ -55,33 +81,80 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
     }
   }
 
+  Future<void> _switchCamera() async {
+    if (_cameras.length < 2) return;
+    setState(() {
+      _isReady = false;
+      _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
+    });
+    await _controller?.dispose();
+    _controller = CameraController(
+      _cameras[_selectedCameraIndex],
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
+    await _controller?.initialize();
+    if (mounted) {
+      setState(() {
+        _isReady = true;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _guideTimer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
 
   Future<void> _captureAndCheck() async {
-    if (_controller == null || !_controller!.value.isInitialized || _isProcessing) return;
+    if (_controller == null ||
+        !_controller!.value.isInitialized ||
+        _isProcessing)
+      return;
 
     setState(() {
       _isProcessing = true;
+      _loadingStep = 1;
       _hintText = 'Analyzing face and background... Hold still!';
     });
 
     try {
       // 1. Take photo
       final XFile rawPhoto = await _controller!.takePicture();
-      
+
+      // Start the loading animation future
+      final loadingStepsFuture = () async {
+        setState(() {
+          _loadingStep = 1;
+        });
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (!mounted || !_isProcessing) return;
+        setState(() {
+          _loadingStep = 2;
+        });
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (!mounted || !_isProcessing) return;
+        setState(() {
+          _loadingStep = 3;
+        });
+        await Future.delayed(const Duration(milliseconds: 1500));
+      }();
+
       // 2. Upload photo to compliance checker
-      Map<String, dynamic> uploadRes;
-      if (kIsWeb) {
-        final bytes = await rawPhoto.readAsBytes();
-        uploadRes = await _apiService.uploadPhoto(rawPhoto.path, bytes: bytes);
-      } else {
-        uploadRes = await _apiService.uploadPhoto(rawPhoto.path);
-      }
-      
+      final uploadFuture = () async {
+        if (kIsWeb) {
+          final bytes = await rawPhoto.readAsBytes();
+          return await _apiService.uploadPhoto(rawPhoto.path, bytes: bytes);
+        } else {
+          return await _apiService.uploadPhoto(rawPhoto.path);
+        }
+      }();
+
+      await Future.wait([loadingStepsFuture, uploadFuture]);
+      Map<String, dynamic> uploadRes = await uploadFuture;
+
       final String sessionId = uploadRes['session_id'] ?? '';
       final bool isCompliant = uploadRes['is_compliant'] ?? false;
       final report = uploadRes['compliance_report'] ?? {};
@@ -98,13 +171,13 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
         // 3. Generate cropped white-bg passport photo
         final generateRes = await _apiService.generatePassportPhoto(sessionId);
         final String photoId = generateRes['photo_id'] ?? '';
-        
+
         if (photoId.isNotEmpty) {
           // 4. Handle persistence based on platform
           String localPath;
           if (kIsWeb) {
             localPath = '${_apiService.baseUrl}/download/$photoId';
-            
+
             // Add to AppState history
             final appState = Provider.of<AppState>(context, listen: false);
             await appState.addCapture(
@@ -133,13 +206,21 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
             return;
           } else {
             // Mobile: Download final photo
-            final Uint8List? photoBytes = await _apiService.downloadPhoto(photoId);
+            final Uint8List? photoBytes = await _apiService.downloadPhoto(
+              photoId,
+            );
             if (photoBytes != null && mounted) {
               // Save to local documents directory for persistence
               final directory = await getApplicationDocumentsDirectory();
               localPath = '${directory.path}/passport_$photoId.jpg';
               final file = File(localPath);
               await file.writeAsBytes(photoBytes);
+
+              try {
+                await ImageGallerySaverPlus.saveFile(localPath);
+              } catch (e) {
+                debugPrint('Failed to save to gallery: $e');
+              }
 
               // Add to AppState history
               final appState = Provider.of<AppState>(context, listen: false);
@@ -170,7 +251,7 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
             }
           }
         }
-        
+
         setState(() {
           _hintText = 'Could not generate photo. Please try again.';
         });
@@ -204,137 +285,412 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.gradientBg,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Passport Capture', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-              Text('Align face inside the guide', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
-            ],
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: AppTheme.ink),
-        ),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Camera Preview with Guide Overlay
-                Expanded(
-                  child: Container(
-                    decoration: AppTheme.glassmorphicCustom(radius: 24),
-                    clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (_isReady && _controller != null)
-                          Positioned.fill(
-                            child: AspectRatio(
-                              aspectRatio: _controller!.value.aspectRatio,
-                              child: CameraPreview(_controller!),
-                            ),
-                          )
-                        else
-                          const Center(child: CircularProgressIndicator(color: AppTheme.brand)),
-                        
-                        // Passport Oval & Shoulders Overlay
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: PassportGuidePainter(),
-                          ),
-                        ),
-
-                        // Processing Spinner
-                        if (_isProcessing)
-                          Container(
-                            color: Colors.black45,
-                            child: const Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircularProgressIndicator(color: Colors.white),
-                                  SizedBox(height: 12),
-                                  Text(
-                                    'Running AI Checks...',
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Status Box / Live Hints
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF111827).withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ],
-                  ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          // Top 11%
+          Expanded(
+            flex: 11,
+            child: Container(
+              color: const Color(0xFF1E1B4B),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Colors.white, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _hintText,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: _isProcessing ? null : () => Navigator.pop(context),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Passport Capture',
+                                style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Align face inside the guide',
+                                style: TextStyle(fontSize: 12, color: Colors.white70),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                
-                // Control Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _isProcessing ? null : () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: const Text('Back'),
+              ),
+            ),
+          ),
+
+          // Middle 73%
+          Expanded(
+            flex: 73,
+            child: Stack(
+              children: [
+                if (_isReady && _controller != null)
+                  Positioned.fill(
+                    child: ClipRect(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          var cameraRatio = _controller!.value.aspectRatio;
+                          var containerRatio = constraints.maxWidth / constraints.maxHeight;
+                          
+                          if (containerRatio < 1 && cameraRatio > 1) {
+                            cameraRatio = 1 / cameraRatio;
+                          } else if (containerRatio > 1 && cameraRatio < 1) {
+                            cameraRatio = 1 / cameraRatio;
+                          }
+
+                          double scale = containerRatio / cameraRatio;
+                          if (scale < 1.0) {
+                            scale = 1.0 / scale;
+                          }
+
+                          return Transform.scale(
+                            scale: scale,
+                            child: Center(
+                              child: CameraPreview(_controller!),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(width: 12),
+                  )
+                else
+                  const Center(
+                    child: CircularProgressIndicator(color: AppTheme.brand),
+                  ),
+                
+                Positioned.fill(
+                  child: CustomPaint(painter: PassportGuidePainter()),
+                ),
+
+                if (_showGuide)
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.info_outline, color: Colors.white, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _hintText,
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                if (_isProcessing) _buildProcessingOverlay(),
+              ],
+            ),
+          ),
+
+          // Bottom 16%
+          Expanded(
+            flex: 16,
+            child: Container(
+              width: double.infinity,
+              color: const Color(0xFF1E1B4B),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Recent Photo Thumbnail (left side)
                     Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        onPressed: _isProcessing ? null : _captureAndCheck,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 32),
+                          child: Consumer<AppState>(
+                            builder: (context, appState, child) {
+                              final recentCaptures = appState.captures.where((c) => c['type'] == 'passport').toList();
+                              final recentPhoto = recentCaptures.isNotEmpty ? recentCaptures.last['path'] as String : null;
+                              return GestureDetector(
+                                onTap: () {},
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.brand.withOpacity(0.8),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    image: recentPhoto != null
+                                        ? DecorationImage(
+                                            image: (kIsWeb || recentPhoto.startsWith('http') || recentPhoto.startsWith('blob:'))
+                                                ? NetworkImage(recentPhoto)
+                                                : FileImage(File(recentPhoto)) as ImageProvider,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : null,
+                                  ),
+                                  child: recentPhoto == null
+                                      ? const Icon(Icons.photo_library_outlined, color: Colors.white, size: 20)
+                                      : null,
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                        child: const Text('Capture & Verify', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      ),
+                    ),
+
+                    // Capture Button (center)
+                    GestureDetector(
+                      onTap: _isProcessing ? null : _captureAndCheck,
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isProcessing ? Colors.grey : AppTheme.brand,
+                          border: Border.all(color: Colors.white, width: 3),
+                        ),
+                        child: const Icon(Icons.camera_alt, color: Colors.black, size: 28),
+                      ),
+                    ),
+
+                    // Flip Camera Button (right side mirror of left)
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 32),
+                          child: GestureDetector(
+                            onTap: _isProcessing ? null : _switchCamera,
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProcessingOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.5),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight * 0.92,
+                    maxWidth: constraints.maxWidth - 80,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.brand.withOpacity(0.4),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.brand.withOpacity(0.15),
+                          blurRadius: 30,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: CircularProgressIndicator(
+                                  color: AppTheme.brand,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              const Icon(Icons.memory, color: AppTheme.brand, size: 24),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'NEURAL ENGINE ACTIVE',
+                            style: TextStyle(
+                              color: AppTheme.brand,
+                              fontSize: 9,
+                              letterSpacing: 2,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'STEP $_loadingStep/3: ${_loadingStep == 1
+                                ? "INITIALIZING SESSION..."
+                                : _loadingStep == 2
+                                ? "ANALYZING FEATURES..."
+                                : "FINALIZING COMPLIANCE..."}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(child: _buildOverlayStat('SYMMETRY', _loadingStep >= 2 ? 'OPTIMAL' : 'SCANNING')),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildOverlayStat('LIVENESS', _loadingStep >= 2 ? '0.9942' : 'SCANNING')),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(child: _buildOverlayStat('GEOINDEX', _loadingStep >= 1 ? 'SYNCED' : 'WAITING')),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildOverlayStat('VECTOR', _loadingStep >= 1 ? '12.4.9' : 'WAITING')),
+                            ],
+                          ),
+                          if (_loadingStep >= 2) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(child: _buildOverlayStat('SHARPNESS', _loadingStep >= 3 ? 'HIGH' : 'CHECKING')),
+                                const SizedBox(width: 8),
+                                Expanded(child: _buildOverlayStat('LIGHTING', _loadingStep >= 3 ? 'BALANCED' : 'CHECKING')),
+                              ],
+                            ),
+                          ],
+                          if (_loadingStep >= 3) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(child: _buildOverlayStat('BACKGROUND', 'CLEAR')),
+                                const SizedBox(width: 8),
+                                Expanded(child: _buildOverlayStat('EYES_OPEN', 'TRUE')),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white.withOpacity(0.1)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '[SYS] INITIALIZING BUFFER...',
+                                  style: TextStyle(color: AppTheme.brand, fontSize: 8, fontFamily: 'monospace'),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _loadingStep == 1
+                                      ? '[AI] SCANNING FACE VECTORS...'
+                                      : _loadingStep == 2
+                                      ? '[AI] MEASURING FEATURES...'
+                                      : '[AI] CONFIRMING...',
+                                  style: const TextStyle(color: AppTheme.brand, fontSize: 8, fontFamily: 'monospace'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
+      ),
+    );
+  }
+  Widget _buildOverlayStat(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 7,
+              letterSpacing: 1,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppTheme.brand,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -358,7 +714,8 @@ class PassportGuidePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     // Outer path
-    final pathOuter = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final pathOuter = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
     // Face Oval
     final ovalWidth = size.width * 0.52;
@@ -383,14 +740,14 @@ class PassportGuidePainter extends CustomPainter {
       Offset(size.width / 2, size.height * 0.9),
       paintLineActive,
     );
-    
+
     // Draw horizontal reference lines (Eyes region ~40% and Chin ~70%)
     canvas.drawLine(
       Offset(size.width / 2 - ovalWidth / 2, size.height * 0.4),
       Offset(size.width / 2 + ovalWidth / 2, size.height * 0.4),
       paintLineActive,
     );
-    
+
     canvas.drawLine(
       Offset(size.width / 2 - ovalWidth / 2, size.height * 0.65),
       Offset(size.width / 2 + ovalWidth / 2, size.height * 0.65),
@@ -401,4 +758,3 @@ class PassportGuidePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
