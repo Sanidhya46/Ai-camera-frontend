@@ -20,42 +20,43 @@ class _SmartSetupScreenState extends State<SmartSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final isDark = appState.isDarkMode;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Smart Solo Setup', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-            Text('Tell AI what kind of shot you want', style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9))),
+            Text('Smart Solo Setup', style: TextStyle(fontSize: 18, color: AppTheme.ink(isDark), fontWeight: FontWeight.bold)),
+            Text('Tell AI what kind of shot you want', style: TextStyle(fontSize: 12, color: AppTheme.muted(isDark).withOpacity(0.9))),
           ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
+        iconTheme: IconThemeData(color: AppTheme.ink(isDark)),
       ),
       body: Container(
-        decoration: AppTheme.gradientBg,
+        decoration: AppTheme.gradientBg(isDark),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                _buildSelectionCard(
+                _buildSelectionCard(isDark: isDark, 
                   title: 'What are you shooting for?',
                   options: ['Travel', 'Portrait', 'Fashion', 'Reel'],
                   selected: appState.selectedGoal,
                   onSelect: (val) => context.read<AppState>().setSetupOptions(goal: val),
                 ),
                 const SizedBox(height: 12),
-                _buildSelectionCard(
+                _buildSelectionCard(isDark: isDark, 
                   title: 'Environment',
                   options: ['Outdoor City', 'Beach', 'Nature', 'Indoor Café'],
                   selected: appState.selectedEnv,
                   onSelect: (val) => context.read<AppState>().setSetupOptions(env: val),
                 ),
                 const SizedBox(height: 12),
-                _buildSelectionCard(
+                _buildSelectionCard(isDark: isDark, 
                   title: 'Shot type & style',
                   options: ['Full body', 'Half body', 'Cinematic', 'Natural'],
                   selected: appState.selectedStyle,
@@ -102,7 +103,7 @@ class _SmartSetupScreenState extends State<SmartSetupScreen> {
     );
   }
 
-  Widget _buildSelectionCard({
+  Widget _buildSelectionCard({required bool isDark,
     required String title,
     required List<String> options,
     required String selected,
@@ -110,12 +111,12 @@ class _SmartSetupScreenState extends State<SmartSetupScreen> {
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: AppTheme.glassmorphicDecoration,
+      decoration: AppTheme.glassmorphicDecoration(isDark),
       width: double.infinity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.ink)),
+          Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.ink(isDark))),
           const SizedBox(height: 14),
           Wrap(
             spacing: 8,
@@ -129,7 +130,7 @@ class _SmartSetupScreenState extends State<SmartSetupScreen> {
                   decoration: BoxDecoration(
                     color: isSelected ? AppTheme.brand.withOpacity(0.12) : Colors.white.withOpacity(0.05),
                     border: Border.all(
-                      color: isSelected ? AppTheme.brand.withOpacity(0.4) : AppTheme.line,
+                      color: isSelected ? AppTheme.brand.withOpacity(0.4) : AppTheme.line(isDark),
                       width: 1.2,
                     ),
                     borderRadius: BorderRadius.circular(999),
@@ -148,7 +149,7 @@ class _SmartSetupScreenState extends State<SmartSetupScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? AppTheme.brand : AppTheme.ink,
+                      color: isSelected ? AppTheme.brand : AppTheme.ink(isDark),
                     ),
                   ),
                 ),

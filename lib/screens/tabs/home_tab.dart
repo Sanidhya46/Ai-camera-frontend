@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'dart:io';
+import 'dart:io' show File;
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/screens/passport/guidelines_screen.dart';
@@ -21,27 +21,37 @@ class HomeTab extends StatelessWidget {
     final appState = context.watch<AppState>();
     final isPremium = appState.isPremium;
     final recentCaptures = appState.captures.take(3).toList();
+    final isDark = appState.isDarkMode;
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-          Row(
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF090D1A) : Colors.white,
+            boxShadow: !isDark ? [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                offset: const Offset(0, 4),
+                blurRadius: 8,
+              ),
+            ] : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'SmartShutter',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.ink),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? AppTheme.ink(isDark) : Colors.black87),
                     ),
                     Text(
                       'Choose how you want to shoot today',
-                      style: TextStyle(fontSize: 13, color: AppTheme.muted.withOpacity(0.9)),
+                      style: TextStyle(fontSize: 12, color: isDark ? AppTheme.muted(isDark) : Colors.black54),
                     ),
                   ],
                 ),
@@ -61,12 +71,20 @@ class HomeTab extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 24),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
           
           _buildModeCard(
             title: 'Passport / ID Photo',
             subtitle: 'Free mode · Take compliant photos at home',
             trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.brand),
+            isDark: isDark,
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const PassportGuidelinesScreen()));
             },
@@ -77,6 +95,7 @@ class HomeTab extends StatelessWidget {
             title: 'Smart Solo Mode',
             subtitle: isPremium ? 'Premium active · AI-guided aesthetic capture' : 'Premium mode · AI-guided aesthetic capture',
             trailing: Icon(Icons.arrow_forward_ios, size: 14, color: isPremium ? AppTheme.ok : AppTheme.brand2),
+            isDark: isDark,
             onTap: () {
               showDialog(
                 context: context,
@@ -97,14 +116,14 @@ class HomeTab extends StatelessWidget {
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(18),
-            decoration: AppTheme.glassmorphicDecoration,
+            decoration: AppTheme.glassmorphicDecoration(isDark),
             width: double.infinity,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Recent captures',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.ink),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.ink(isDark)),
                 ),
                 const SizedBox(height: 14),
                 if (recentCaptures.isEmpty)
@@ -113,7 +132,7 @@ class HomeTab extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       'No recent photos yet. Start capturing!',
-                      style: TextStyle(color: AppTheme.muted.withOpacity(0.8), fontSize: 13),
+                      style: TextStyle(color: AppTheme.muted(isDark), fontSize: 13),
                     ),
                   )
                 else
@@ -125,26 +144,30 @@ class HomeTab extends StatelessWidget {
                         onTap: () {
                           context.read<AppState>().setTabIndex(1); // Switch to Gallery tab
                         },
-                        child: _buildThumb(path),
+                        child: _buildThumb(path, isDark),
                       );
                     }).toList(),
                   ),
               ],
             ),
           ),
-        ],
-      ),
-    ));
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildModeCard({
     required String title,
     required String subtitle,
     required Widget trailing,
+    required bool isDark,
     required VoidCallback onTap,
   }) {
     return Container(
-      decoration: AppTheme.glassmorphicDecoration,
+      decoration: AppTheme.glassmorphicDecoration(isDark),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -160,12 +183,12 @@ class HomeTab extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.ink),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.ink(isDark)),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: TextStyle(color: AppTheme.muted.withOpacity(0.9), fontSize: 13),
+                        style: TextStyle(color: AppTheme.muted(isDark), fontSize: 13),
                       ),
                     ],
                   ),
@@ -180,14 +203,20 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildThumb(String path) {
+  Widget _buildThumb(String path, bool isDark) {
     final isUrlOrBlob = kIsWeb || path.startsWith('http') || path.startsWith('blob:');
-    final exists = isUrlOrBlob || File(path).existsSync();
+    final bool exists;
+    
+    if (kIsWeb) {
+      exists = isUrlOrBlob;
+    } else {
+      exists = isUrlOrBlob || File(path).existsSync();
+    }
 
     return Container(
       width: 80,
       height: 110,
-      decoration: AppTheme.glassmorphicCustom(radius: 14),
+      decoration: AppTheme.glassmorphicCustom(radius: 14, isDark: isDark),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         alignment: Alignment.bottomCenter,
@@ -199,14 +228,16 @@ class HomeTab extends StatelessWidget {
                       path,
                       fit: BoxFit.cover,
                     )
-                  : Image.file(
-                      File(path),
-                      fit: BoxFit.cover,
-                    ),
+                  : kIsWeb
+                      ? Image.network(path, fit: BoxFit.cover)
+                      : Image.file(
+                          File(path),
+                          fit: BoxFit.cover,
+                        ),
             )
           else
-            const Center(
-              child: Icon(Icons.broken_image_outlined, color: AppTheme.muted, size: 20),
+            Center(
+              child: Icon(Icons.broken_image_outlined, color: AppTheme.muted(isDark), size: 20),
             ),
         ],
       ),

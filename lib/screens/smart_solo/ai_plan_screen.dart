@@ -50,25 +50,26 @@ class _AiPlanScreenState extends State<AiPlanScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final isDark = appState.isDarkMode;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('AI Shoot Plan', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
+            Text('AI Shoot Plan', style: TextStyle(fontSize: 18, color: AppTheme.ink(isDark), fontWeight: FontWeight.bold)),
             Text(
               '${appState.selectedGoal} · ${appState.selectedEnv}', 
-              style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9)),
+              style: TextStyle(fontSize: 12, color: AppTheme.muted(isDark).withOpacity(0.9)),
             ),
           ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
+        iconTheme: IconThemeData(color: AppTheme.ink(isDark)),
       ),
       body: Container(
-        decoration: AppTheme.gradientBg,
+        decoration: AppTheme.gradientBg(isDark),
         child: SafeArea(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator(color: AppTheme.brand))
@@ -81,7 +82,7 @@ class _AiPlanScreenState extends State<AiPlanScreen> {
                           itemCount: _poses.length,
                           itemBuilder: (context, index) {
                             final pose = _poses[index];
-                            return _buildPoseCard(index + 1, pose['instruction']);
+                            return _buildPoseCard(index + 1, pose['instruction'], isDark);
                           },
                         ),
                       ),
@@ -135,11 +136,11 @@ class _AiPlanScreenState extends State<AiPlanScreen> {
     );
   }
 
-  Widget _buildPoseCard(int number, String instruction) {
+  Widget _buildPoseCard(int number, String instruction, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
-      decoration: AppTheme.glassmorphicDecoration,
+      decoration: AppTheme.glassmorphicDecoration(isDark),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -165,7 +166,7 @@ class _AiPlanScreenState extends State<AiPlanScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Pose Guideline $number Visual',
-                  style: const TextStyle(color: AppTheme.muted, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: AppTheme.muted(isDark), fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -189,7 +190,7 @@ class _AiPlanScreenState extends State<AiPlanScreen> {
               Expanded(
                 child: Text(
                   instruction,
-                  style: const TextStyle(color: AppTheme.ink, fontSize: 13, height: 1.45, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: AppTheme.ink(isDark), fontSize: 13, height: 1.45, fontWeight: FontWeight.w500),
                 ),
               ),
             ],

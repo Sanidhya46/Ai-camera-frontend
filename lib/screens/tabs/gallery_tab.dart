@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'dart:io';
+import 'dart:io' show File, Platform;
 import 'dart:typed_data';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
@@ -29,46 +29,66 @@ class _GalleryTabState extends State<GalleryTab> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final isDark = appState.isDarkMode;
     
     // Filter history items based on active tab selection
     final filteredHistory = appState.captures.where((c) => c['type'] == _activeFilter).toList();
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF090D1A) : Colors.white,
+            boxShadow: !isDark ? [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                offset: const Offset(0, 4),
+                blurRadius: 8,
+              ),
+            ] : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Gallery', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.ink)),
+                  Text('Gallery', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? AppTheme.ink(isDark) : Colors.black87)),
                   Text(
                     'Review past outputs and sessions',
-                    style: TextStyle(fontSize: 13, color: AppTheme.muted.withOpacity(0.9)),
+                    style: TextStyle(fontSize: 12, color: isDark ? AppTheme.muted(isDark) : Colors.black54),
                   ),
                 ],
               ),
               if (appState.captures.isNotEmpty)
                 IconButton(
-                  icon: const Icon(Icons.delete_sweep_outlined, color: AppTheme.danger),
+                  icon: Icon(Icons.delete_sweep_outlined, color: isDark ? AppTheme.danger : Colors.white),
                   tooltip: 'Clear History',
                   onPressed: () => _confirmClearAll(context),
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
+        
+        // Content padding for the rest of the tab
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
           
           // Filters selection Row
           Row(
             children: [
-              _buildChip('Passport / ID', _activeFilter == 'passport', () {
+              _buildChip('Passport / ID', _activeFilter == 'passport', isDark, () {
                 setState(() => _activeFilter = 'passport');
               }),
               const SizedBox(width: 10),
-              _buildChip('Smart Solo Poses', _activeFilter == 'smart_solo', () {
+              _buildChip('Smart Solo Poses', _activeFilter == 'smart_solo', isDark, () {
                 setState(() => _activeFilter = 'smart_solo');
               }),
             ],
@@ -85,12 +105,12 @@ class _GalleryTabState extends State<GalleryTab> {
                         Icon(
                           _activeFilter == 'passport' ? Icons.badge_outlined : Icons.person_outline,
                           size: 48,
-                          color: AppTheme.muted.withOpacity(0.5),
+                          color: AppTheme.muted(isDark),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'No ${_activeFilter == 'passport' ? 'ID' : 'Solo'} photos found.',
-                          style: TextStyle(color: AppTheme.muted.withOpacity(0.8), fontSize: 14),
+                          style: TextStyle(color: AppTheme.muted(isDark), fontSize: 14),
                         ),
                       ],
                     ),
@@ -107,12 +127,15 @@ class _GalleryTabState extends State<GalleryTab> {
                       final item = filteredHistory[index];
                       final id = item['id'] as String;
                       final path = item['path'] as String;
-                      return _buildThumbItem(context, id, path);
+                      return _buildThumbItem(context, id, path, isDark);
                     },
                   ),
           ),
-        ],
-      ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -138,7 +161,7 @@ class _GalleryTabState extends State<GalleryTab> {
     }
   }
 
-  Widget _buildChip(String label, bool isActive, VoidCallback onTap) {
+  Widget _buildChip(String label, bool isActive, bool isDark, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -146,7 +169,7 @@ class _GalleryTabState extends State<GalleryTab> {
         decoration: BoxDecoration(
           color: isActive ? AppTheme.brand.withOpacity(0.12) : Colors.white.withOpacity(0.05),
           border: Border.all(
-            color: isActive ? AppTheme.brand.withOpacity(0.4) : AppTheme.line,
+            color: isActive ? AppTheme.brand.withOpacity(0.4) : AppTheme.line(isDark),
             width: 1.2,
           ),
           borderRadius: BorderRadius.circular(999),
@@ -156,16 +179,22 @@ class _GalleryTabState extends State<GalleryTab> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-            color: isActive ? AppTheme.brand : AppTheme.ink,
+            color: isActive ? AppTheme.brand : AppTheme.ink(isDark),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildThumbItem(BuildContext context, String id, String path) {
+  Widget _buildThumbItem(BuildContext context, String id, String path, bool isDark) {
     final isUrlOrBlob = kIsWeb || path.startsWith('http') || path.startsWith('blob:');
-    final exists = isUrlOrBlob || File(path).existsSync();
+    final bool exists;
+    
+    if (kIsWeb) {
+      exists = isUrlOrBlob;
+    } else {
+      exists = isUrlOrBlob || File(path).existsSync();
+    }
 
     return GestureDetector(
       onTap: () {
@@ -174,7 +203,7 @@ class _GalleryTabState extends State<GalleryTab> {
         }
       },
       child: Container(
-        decoration: AppTheme.glassmorphicCustom(radius: 14),
+        decoration: AppTheme.glassmorphicCustom(radius: 14, isDark: isDark),
         clipBehavior: Clip.antiAlias,
         child: exists
             ? (isUrlOrBlob
@@ -182,12 +211,14 @@ class _GalleryTabState extends State<GalleryTab> {
                     path,
                     fit: BoxFit.cover,
                   )
-                : Image.file(
-                    File(path),
-                    fit: BoxFit.cover,
-                  ))
-            : const Center(
-                child: Icon(Icons.broken_image_outlined, color: AppTheme.muted),
+                : kIsWeb
+                    ? Image.network(path, fit: BoxFit.cover)
+                    : Image.file(
+                        File(path),
+                        fit: BoxFit.cover,
+                      ))
+            : Center(
+                child: Icon(Icons.broken_image_outlined, color: AppTheme.muted(isDark)),
               ),
       ),
     );
@@ -200,7 +231,7 @@ class _GalleryTabState extends State<GalleryTab> {
         final response = await http.get(Uri.parse(imagePath));
         bytes = response.bodyBytes;
       } else {
-        if (File(imagePath).existsSync()) {
+        if (!kIsWeb && File(imagePath).existsSync()) {
           bytes = await File(imagePath).readAsBytes();
         }
       }
@@ -321,10 +352,12 @@ class _GalleryTabState extends State<GalleryTab> {
                         path,
                         fit: BoxFit.contain,
                       )
-                    : Image.file(
-                        File(path),
-                        fit: BoxFit.contain,
-                      ),
+                    : kIsWeb
+                        ? Image.network(path, fit: BoxFit.contain)
+                        : Image.file(
+                            File(path),
+                            fit: BoxFit.contain,
+                          ),
               ),
             ),
             const SizedBox(height: 16),

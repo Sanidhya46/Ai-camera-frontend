@@ -1,7 +1,6 @@
 /// Permissions request screen shown during app setup to request camera and storage access.
-/// Displays required and optional permissions with status indicators showing what's granted.
-/// Handles platform-specific permission requests and gracefully manages both web and mobile environments.
-/// Routes to main layout after permissions are handled, marking the end of onboarding flow.
+/// Fully theme-aware with dynamic background and card styles.
+/// Routes to main layout after permissions are handled.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -45,7 +44,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
         });
       }
     } catch (_) {
-      // Fallback if permission handler fails on certain platforms
       setState(() {
         _cameraGranted = true;
         _storageGranted = true;
@@ -68,21 +66,29 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
         }
         _goToMainLayout();
       } catch (e) {
-        // Safe fallback for web environments where request might fail
         _goToMainLayout();
       }
       return;
     }
 
+    final isDark = context.read<AppState>().isDarkMode;
     final shouldRequest = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Permissions Required'),
-        content: const Text('SmartShutter needs access to your camera to take photos. Storage permission is optional but recommended for saving photos. Please grant permissions in the next steps.'),
+        backgroundColor: AppTheme.surface(isDark),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Permissions Required',
+          style: TextStyle(color: AppTheme.ink(isDark)),
+        ),
+        content: Text(
+          'SmartShutter needs access to your camera to take photos. Storage permission is optional but recommended for saving photos.',
+          style: TextStyle(color: AppTheme.muted(isDark)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.muted(isDark))),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -123,6 +129,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     final appState = Provider.of<AppState>(context, listen: false);
     await appState.setOnboardingSeen(true);
     await appState.setPermissionsFlowSeen(true);
+    appState.setTabIndex(0);
 
     if (mounted) {
       Navigator.pushReplacement(
@@ -134,53 +141,117 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<AppState>().isDarkMode;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Permissions', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-            Text('Only what the app needs', style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9))),
-          ],
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      backgroundColor: AppTheme.surface(isDark),
       body: Container(
-        decoration: AppTheme.gradientBg,
+        width: double.infinity,
+        height: double.infinity,
+        color: AppTheme.surface(isDark),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                _buildCheckRow('Camera access', true, _cameraGranted),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF090D1A) : null,
+                  gradient: isDark ? null : AppTheme.brandGradient,
+                  border: isDark ? const Border(bottom: BorderSide(color: Colors.white24, width: 1)) : null,
+                  boxShadow: !isDark ? [
+                    BoxShadow(
+                      color: AppTheme.brand.withOpacity(0.3),
+                      offset: const Offset(0, 4),
+                      blurRadius: 8,
+                    ),
+                  ] : null,
+                ),
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Permissions',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Only what the app needs — your privacy is safe',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppTheme.muted(isDark) : Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCheckRow('Camera access', true, _cameraGranted, isDark, Icons.camera_alt_outlined),
                 const SizedBox(height: 12),
-                _buildCheckRow('Photos / storage', false, _storageGranted),
-                const SizedBox(height: 12),
-                _buildCheckRow('Location', false, false),
+                _buildCheckRow('Photos / storage', false, _storageGranted, isDark, Icons.photo_library_outlined),
                 const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  decoration: AppTheme.glassmorphicDecoration(isDark).copyWith(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF7F8FC),
+                    border: Border.all(color: AppTheme.muted(isDark).withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: AppTheme.muted(isDark), size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Location improves scene-aware pose suggestions in Smart Solo mode. You can skip it and still use the app.',
+                          style: TextStyle(
+                            color: AppTheme.muted(isDark),
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
+                  height: 36,
                   child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.brand.withOpacity(0.25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
+                    decoration: AppTheme.brandGradientDecoration,
                     child: ElevatedButton(
                       onPressed: _requestPermissions,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('Allow & Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Allow & Continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -188,34 +259,65 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             ),
           ),
         ),
-      ),
-    );
+              ],
+            ),
+          ),
+        ),
+      );
   }
 
-  Widget _buildCheckRow(String label, bool isRequired, bool isGranted) {
+  Widget _buildCheckRow(String label, bool isRequired, bool isGranted, bool isDark, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: AppTheme.glassmorphicDecoration,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: AppTheme.glassmorphicDecoration(isDark).copyWith(
+        border: Border.all(color: AppTheme.muted(isDark).withOpacity(0.3)),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.ink),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: (isGranted ? AppTheme.ok : AppTheme.brand).withOpacity(0.1),
+            ),
+            child: Icon(
+              icon,
+              color: isGranted ? AppTheme.ok : AppTheme.brand,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: isDark ? 15 : 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.ink(isDark),
+              ),
+            ),
           ),
           if (isGranted)
-            const Row(
-              children: [
-                Icon(Icons.check_circle, color: AppTheme.ok, size: 18),
-                SizedBox(width: 6),
-                Text('Granted', style: TextStyle(color: AppTheme.ok, fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppTheme.ok.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: AppTheme.ok, size: 14),
+                  SizedBox(width: 4),
+                  Text('Granted', style: TextStyle(color: AppTheme.ok, fontWeight: FontWeight.bold, fontSize: 12)),
+                ],
+              ),
             )
           else
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isRequired ? AppTheme.ok.withOpacity(0.12) : AppTheme.warn.withOpacity(0.12),
+                color: (isRequired ? AppTheme.ok : AppTheme.warn).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -232,4 +334,3 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     );
   }
 }
-

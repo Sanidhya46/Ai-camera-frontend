@@ -36,7 +36,9 @@ class _MainLayoutState extends State<MainLayout> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: AppTheme.gradientBg,
+        decoration: appState.isDarkMode 
+            ? AppTheme.gradientBg(true) 
+            : const BoxDecoration(color: Colors.white),
         child: SafeArea(
           bottom: false,
           child: _tabs[appState.selectedTabIndex],
@@ -48,7 +50,7 @@ class _MainLayoutState extends State<MainLayout> {
           appState.setTabIndex(index);
         },
         selectedItemColor: AppTheme.brand,
-        unselectedItemColor: AppTheme.muted,
+        unselectedItemColor: AppTheme.muted(appState.isDarkMode),
         showUnselectedLabels: true,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),

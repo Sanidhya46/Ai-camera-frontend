@@ -132,6 +132,7 @@ class _LiveCaptureScreenState extends State<LiveCaptureScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final isDark = appState.isDarkMode;
     final activePose = appState.aiPoses.isNotEmpty ? appState.aiPoses[0]['instruction'] : 'Step back and follow AI instructions.';
 
     return Scaffold(
@@ -197,6 +198,30 @@ class _LiveCaptureScreenState extends State<LiveCaptureScreen> {
                       child: Text(
                         '$_countdown',
                         style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  )
+                else
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black.withOpacity(0.7) : Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(color: AppTheme.brand),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Capturing...',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

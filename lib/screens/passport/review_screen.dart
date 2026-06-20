@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:smart_shutter/core/theme.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/screens/main_layout.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -173,32 +175,33 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
     final bool isNaturalExp = widget.report['natural_expression_ok'] ?? true;
     
     final bool allCriteriaMet = isFaceCentered && isBgAcceptable && isHeadPoseOk && isEyesOpen && isMouthClosed && isNaturalExp;
+    final isDark = context.watch<AppState>().isDarkMode;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Review ID Photo', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
+            Text('Review ID Photo', style: TextStyle(fontSize: 18, color: isDark ? AppTheme.ink(isDark) : Colors.white, fontWeight: FontWeight.bold)),
             Text(
               widget.report.containsKey('error') ? 'Review guidelines' : 'Compliance result',
-              style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9)),
+              style: TextStyle(fontSize: 12, color: isDark ? AppTheme.muted(isDark) : Colors.white.withOpacity(0.8)),
             ),
           ],
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: isDark ? Colors.transparent : AppTheme.brand,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
+        iconTheme: IconThemeData(color: isDark ? AppTheme.ink(isDark) : Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download_rounded, color: AppTheme.ink),
+            icon: Icon(Icons.download_rounded, color: isDark ? AppTheme.ink(isDark) : Colors.white),
             onPressed: _isExporting ? null : _exportFile,
             tooltip: 'Download photo',
           ),
         ],
       ),
       body: Container(
-        decoration: AppTheme.gradientBg,
+        decoration: isDark ? AppTheme.gradientBg(true) : const BoxDecoration(color: Colors.white),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -207,7 +210,7 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
                 // Cropped Image preview
                 Expanded(
                   child: Container(
-                    decoration: AppTheme.glassmorphicDecoration,
+                    decoration: AppTheme.glassmorphicDecoration(isDark),
                     clipBehavior: Clip.antiAlias,
                     child: Center(
                       child: AspectRatio(
@@ -237,10 +240,10 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        _buildCheckRow('Face Centering & Position', isFaceCentered, errorGuide: 'Ensure you are facing forward and your head is centered.'),
-                        _buildCheckRow('Even Studio Lighting', isBgAcceptable, errorGuide: 'Uneven Studio Lighting detected. Make sure the lighting is even and there are no shadows.'),
-                        _buildCheckRow('Direct Eye Contact', isHeadPoseOk && isEyesOpen, errorGuide: 'Look directly at the camera with eyes open.'),
-                        _buildCheckRow('Neutral Expression & Mouth Closed', isMouthClosed && isNaturalExp, errorGuide: 'Maintain a natural expression and keep your mouth closed.'),
+                        _buildCheckRow('Face Centering & Position', isFaceCentered, isDark, errorGuide: 'Ensure you are facing forward and your head is centered.'),
+                        _buildCheckRow('Even Studio Lighting', isBgAcceptable, isDark, errorGuide: 'Uneven Studio Lighting detected. Make sure the lighting is even and there are no shadows.'),
+                        _buildCheckRow('Direct Eye Contact', isHeadPoseOk && isEyesOpen, isDark, errorGuide: 'Look directly at the camera with eyes open.'),
+                        _buildCheckRow('Neutral Expression & Mouth Closed', isMouthClosed && isNaturalExp, isDark, errorGuide: 'Maintain a natural expression and keep your mouth closed.'),
                         const SizedBox(height: 10),
 
                         if (allCriteriaMet)
@@ -269,18 +272,23 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const PassportCameraScreen()),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Container(
+                        decoration: AppTheme.brandGradientDecoration,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const PassportCameraScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: const Text('Retake', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         ),
-                        child: const Text('Retake'),
                       ),
                     ),
                     if (allCriteriaMet) ...[
@@ -335,10 +343,10 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
     );
   }
 
-  Widget _buildCheckRow(String label, bool isOk, {String? errorGuide}) {
+  Widget _buildCheckRow(String label, bool isOk, bool isDark, {String? errorGuide}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: AppTheme.glassmorphicDecoration,
+      decoration: AppTheme.glassmorphicDecoration(isDark),
       margin: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +357,7 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.ink),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.ink(isDark)),
                 ),
               ),
               isOk

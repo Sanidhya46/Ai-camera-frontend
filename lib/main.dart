@@ -1,7 +1,7 @@
 /// Entry point of the SmartShutter application.
 /// This file initializes the Flutter app, sets up the global state management using Provider,
-/// and configures the theme and routing. It ensures all necessary bindings are initialized
-/// before the app runs and wraps the entire app with state providers for centralized state management.
+/// and configures the theme and routing. Uses Consumer to reactively switch between
+/// dark and light themes based on user preference.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -29,11 +29,17 @@ class SmartShutterApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SmartShutter',
-      theme: AppTheme.theme,
-      home: const SplashScreen(),
-      debugShowCheckedModeBanner: false,
+    return Consumer<AppState>(
+      builder: (context, appState, _) {
+        return MaterialApp(
+          title: 'SmartShutter',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: appState.themeMode,
+          home: const SplashScreen(),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }

@@ -15,14 +15,14 @@ A Flutter-based mobile application that uses AI to guide users in taking perfect
 - Real-time pose guidance and framing feedback
 - Automatic capture when pose is optimal
 - Best shot selection and quality ranking
-
+ 
 ### 3. Gallery Management
 - Filter photos by mode (Passport vs Smart Solo)
 - Full-screen preview with download/share options
 - Organized capture history with metadata
 
 ## Project Structure
-
+ 
 ```
 ai-camera-frontend/
 ├── lib/

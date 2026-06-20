@@ -5,7 +5,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io';
+import 'package:provider/provider.dart';
+import 'dart:io' show File;
+import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/screens/main_layout.dart';
 
@@ -19,21 +21,24 @@ class ResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isDark = appState.isDarkMode;
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Your Best Shots', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-            Text('AI-selected results', style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9))),
+            Text('Your Best Shots', style: TextStyle(fontSize: 18, color: AppTheme.ink(isDark), fontWeight: FontWeight.bold)),
+            Text('AI-selected results', style: TextStyle(fontSize: 12, color: AppTheme.muted(isDark).withOpacity(0.9))),
           ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
+        iconTheme: IconThemeData(color: AppTheme.ink(isDark)),
       ),
       body: Container(
-        decoration: AppTheme.gradientBg,
+        decoration: AppTheme.gradientBg(isDark),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -42,7 +47,7 @@ class ResultsScreen extends StatelessWidget {
                 // Best Shot Preview
                 Expanded(
                   child: Container(
-                    decoration: AppTheme.glassmorphicDecoration,
+                    decoration: AppTheme.glassmorphicDecoration(isDark),
                     clipBehavior: Clip.antiAlias,
                     child: Center(
                       child: ClipRRect(
@@ -53,7 +58,9 @@ class ResultsScreen extends StatelessWidget {
                                     imagePath,
                                     fit: BoxFit.cover,
                                   )
-                                : File(imagePath).existsSync()
+                                : kIsWeb 
+                                  ? Image.network(imagePath, fit: BoxFit.cover)
+                                  : File(imagePath).existsSync()
                                     ? Image.file(
                                         File(imagePath),
                                         fit: BoxFit.cover,
@@ -68,12 +75,12 @@ class ResultsScreen extends StatelessWidget {
                                   ),
                                 ),
                                 alignment: Alignment.center,
-                                child: const Column(
+                                child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.photo_library_outlined, size: 48, color: AppTheme.muted),
+                                    Icon(Icons.photo_library_outlined, size: 48, color: AppTheme.muted(isDark)),
                                     SizedBox(height: 12),
-                                    Text('Best shot preview', style: TextStyle(color: AppTheme.muted, fontWeight: FontWeight.w500)),
+                                    Text('Best shot preview', style: TextStyle(color: AppTheme.muted(isDark), fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ),
@@ -88,9 +95,9 @@ class ResultsScreen extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _buildChip('Best light'),
-                    _buildChip('Best pose'),
-                    _buildChip('Sharpest image'),
+                    _buildChip('Best light', isDark),
+                    _buildChip('Best pose', isDark),
+                    _buildChip('Sharpest image', isDark),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -99,9 +106,9 @@ class ResultsScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildThumb('Alt 1'),
-                    _buildThumb('Alt 2'),
-                    _buildThumb('Alt 3'),
+                    _buildThumb('Alt 1', isDark),
+                    _buildThumb('Alt 2', isDark),
+                    _buildThumb('Alt 3', isDark),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -156,7 +163,7 @@ class ResultsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChip(String label) {
+  Widget _buildChip(String label, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -171,11 +178,11 @@ class ResultsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildThumb(String label) {
+  Widget _buildThumb(String label, bool isDark) {
     return Container(
       width: 90,
       height: 110,
-      decoration: AppTheme.glassmorphicCustom(radius: 14),
+      decoration: AppTheme.glassmorphicCustom(radius: 14, isDark: isDark),
       alignment: Alignment.center,
       child: Text(
         label,

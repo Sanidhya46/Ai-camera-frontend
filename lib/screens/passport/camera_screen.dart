@@ -285,15 +285,16 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<AppState>().isDarkMode;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: isDark ? Colors.black : Colors.white,
       body: Column(
         children: [
           // Top 11%
           Expanded(
             flex: 11,
             child: Container(
-              color: const Color(0xFF1E1B4B),
+              color: isDark ? AppTheme.surface(isDark) : Colors.white,
               child: SafeArea(
                 bottom: false,
                 child: Padding(
@@ -303,12 +304,12 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: Icon(Icons.arrow_back, color: AppTheme.ink(isDark)),
                           onPressed: _isProcessing ? null : () => Navigator.pop(context),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
@@ -319,11 +320,11 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                             children: [
                               Text(
                                 'Passport Capture',
-                                style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 18, color: AppTheme.ink(isDark), fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 'Align face inside the guide',
-                                style: TextStyle(fontSize: 12, color: Colors.white70),
+                                style: TextStyle(fontSize: 12, color: AppTheme.muted(isDark)),
                               ),
                             ],
                           ),
@@ -408,7 +409,7 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                     ),
                   ),
 
-                if (_isProcessing) _buildProcessingOverlay(),
+                if (_isProcessing) _buildProcessingOverlay(isDark),
               ],
             ),
           ),
@@ -418,7 +419,7 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
             flex: 16,
             child: Container(
               width: double.infinity,
-              color: const Color(0xFF1E1B4B),
+              color: isDark ? AppTheme.surface(isDark) : Colors.white,
               child: SafeArea(
                 top: false,
                 child: Row(
@@ -443,7 +444,7 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                                   decoration: BoxDecoration(
                                     color: AppTheme.brand.withOpacity(0.8),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Border.all(color: AppTheme.ink(isDark), width: 1.5),
                                     image: recentPhoto != null
                                         ? DecorationImage(
                                             image: (kIsWeb || recentPhoto.startsWith('http') || recentPhoto.startsWith('blob:'))
@@ -472,10 +473,11 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                         height: 64,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _isProcessing ? Colors.grey : AppTheme.brand,
+                          color: _isProcessing ? Colors.grey : null,
+                          gradient: _isProcessing ? null : const LinearGradient(colors: [AppTheme.brand, AppTheme.brand2]),
                           border: Border.all(color: Colors.white, width: 3),
                         ),
-                        child: const Icon(Icons.camera_alt, color: Colors.black, size: 28),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
                       ),
                     ),
 
@@ -491,10 +493,10 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+                              child: Icon(Icons.flip_camera_ios, color: AppTheme.ink(isDark), size: 24),
                             ),
                           ),
                         ),
@@ -510,10 +512,10 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
     );
   }
 
-  Widget _buildProcessingOverlay() {
+  Widget _buildProcessingOverlay(bool isDark) {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.5),
+        color: isDark ? Colors.black.withOpacity(0.5) : Colors.white.withOpacity(0.5),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Center(
@@ -527,7 +529,7 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.55),
+                      color: isDark ? Colors.black.withOpacity(0.55) : Colors.white.withOpacity(0.85),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: AppTheme.brand.withOpacity(0.4),
@@ -576,8 +578,8 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                                 : _loadingStep == 2
                                 ? "ANALYZING FEATURES..."
                                 : "FINALIZING COMPLIANCE..."}',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1,
@@ -587,26 +589,26 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              Expanded(child: _buildOverlayStat('SYMMETRY', _loadingStep >= 2 ? 'OPTIMAL' : 'SCANNING')),
+                              Expanded(child: _buildOverlayStat('SYMMETRY', _loadingStep >= 2 ? 'OPTIMAL' : 'SCANNING', isDark)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildOverlayStat('LIVENESS', _loadingStep >= 2 ? '0.9942' : 'SCANNING')),
+                              Expanded(child: _buildOverlayStat('LIVENESS', _loadingStep >= 2 ? '0.9942' : 'SCANNING', isDark)),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              Expanded(child: _buildOverlayStat('GEOINDEX', _loadingStep >= 1 ? 'SYNCED' : 'WAITING')),
+                              Expanded(child: _buildOverlayStat('GEOINDEX', _loadingStep >= 1 ? 'SYNCED' : 'WAITING', isDark)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildOverlayStat('VECTOR', _loadingStep >= 1 ? '12.4.9' : 'WAITING')),
+                              Expanded(child: _buildOverlayStat('VECTOR', _loadingStep >= 1 ? '12.4.9' : 'WAITING', isDark)),
                             ],
                           ),
                           if (_loadingStep >= 2) ...[
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                Expanded(child: _buildOverlayStat('SHARPNESS', _loadingStep >= 3 ? 'HIGH' : 'CHECKING')),
+                                Expanded(child: _buildOverlayStat('SHARPNESS', _loadingStep >= 3 ? 'HIGH' : 'CHECKING', isDark)),
                                 const SizedBox(width: 8),
-                                Expanded(child: _buildOverlayStat('LIGHTING', _loadingStep >= 3 ? 'BALANCED' : 'CHECKING')),
+                                Expanded(child: _buildOverlayStat('LIGHTING', _loadingStep >= 3 ? 'BALANCED' : 'CHECKING', isDark)),
                               ],
                             ),
                           ],
@@ -614,9 +616,9 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                Expanded(child: _buildOverlayStat('BACKGROUND', 'CLEAR')),
+                                Expanded(child: _buildOverlayStat('BACKGROUND', 'CLEAR', isDark)),
                                 const SizedBox(width: 8),
-                                Expanded(child: _buildOverlayStat('EYES_OPEN', 'TRUE')),
+                                Expanded(child: _buildOverlayStat('EYES_OPEN', 'TRUE', isDark)),
                               ],
                             ),
                           ],
@@ -660,21 +662,21 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
       ),
     );
   }
-  Widget _buildOverlayStat(String label, String value) {
+  Widget _buildOverlayStat(String label, String value, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white54,
+            style: TextStyle(
+              color: isDark ? Colors.white54 : Colors.black54,
               fontSize: 7,
               letterSpacing: 1,
             ),

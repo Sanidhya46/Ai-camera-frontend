@@ -1,16 +1,17 @@
 /// Initial splash screen shown when the app launches.
-/// Displays an animated logo and app name while checking user's onboarding, permissions, and camera access status.
-/// Routes to the appropriate next screen based on app state: onboarding, permissions, or main layout.
-/// Uses elegant animations for logo rotation and text fade to create a polished first impression.
+/// Displays animated logo while checking auth and onboarding status.
+/// Routes: No auth → Register, Has auth + no onboarding → Onboarding,
+/// Has auth + onboarding done → Main Layout.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
+import 'package:smart_shutter/core/services/auth_service.dart';
+import 'package:smart_shutter/core/theme.dart';
+import 'package:smart_shutter/screens/auth/register_screen.dart';
 import 'package:smart_shutter/screens/onboarding_screen.dart';
 import 'package:smart_shutter/screens/permissions_screen.dart';
 import 'package:smart_shutter/screens/main_layout.dart';
-import 'package:smart_shutter/core/theme.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,38 +54,51 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _navigateToNext() async {
-    // Wait for animation (2200ms) + 1 second hold so user sees the text
+    // Wait for animation + brief hold
     await Future.delayed(const Duration(milliseconds: 3200));
     if (!mounted) return;
     
     final appState = Provider.of<AppState>(context, listen: false);
     
-    bool cameraGranted = false;
-    try {
-      final status = await Permission.camera.status;
-      cameraGranted = status.isGranted;
-    } catch (_) {}
+    // Case 1: User has auth token — try to use it
+    if (appState.isLoggedIn) {
+      // Try refreshing profile in background
+      try {
+        final authService = AuthService();
+        final profileResult = await authService.getProfile(appState.accessToken!);
+        if (profileResult['success'] == true && mounted) {
+          await appState.setCurrentUser(profileResult['data'] as Map<String, dynamic>);
+        }
+      } catch (_) {
+        // Profile refresh failed — continue anyway with cached data
+      }
 
-    // If permissions already shown or granted, go to main layout
-    if (appState.hasSeenPermissionsFlow || cameraGranted) {
+      if (!mounted) return;
+
+      if (!appState.hasSeenOnboarding) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+      } else if (!appState.hasSeenPermissionsFlow) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PermissionsScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainLayout()),
+        );
+      }
+    } else {
+      // Case 2: No auth token — go to register
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainLayout()),
+          MaterialPageRoute(builder: (_) => const RegisterScreen()),
         );
       }
-    } else if (appState.hasSeenOnboarding) {
-      // If onboarding seen but permissions not shown, go to permissions
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const PermissionsScreen()),
-      );
-    } else {
-      // First time: show onboarding
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-      );
     }
   }
 
@@ -96,9 +110,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<AppState>().isDarkMode;
+
     return Scaffold(
       body: Container(
-        color: Colors.black,
+        color: isDark ? Colors.black : Colors.white,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -108,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: RotationTransition(
                   turns: _rotationAnimation,
                   child: Image.asset(
-                    'assets/images/app_logo.png',
+                    isDark ? 'assets/images/app_logo.png' : 'assets/images/app_logo_light_theme.png',
                     width: 64,
                     height: 64,
                   ),
@@ -123,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     'SmartShutter', 
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                 ),

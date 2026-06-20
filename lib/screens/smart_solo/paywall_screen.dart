@@ -14,21 +14,22 @@ class PaywallScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<AppState>().isDarkMode;
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Unlock Smart Solo', style: TextStyle(fontSize: 18, color: AppTheme.ink, fontWeight: FontWeight.bold)),
-            Text('Your Personal AI Photographer', style: TextStyle(fontSize: 12, color: AppTheme.muted.withOpacity(0.9))),
+            Text('Unlock Smart Solo', style: TextStyle(fontSize: 18, color: AppTheme.ink(isDark), fontWeight: FontWeight.bold)),
+            Text('Your Personal AI Photographer', style: TextStyle(fontSize: 12, color: AppTheme.muted(isDark).withOpacity(0.9))),
           ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
+        iconTheme: IconThemeData(color: AppTheme.ink(isDark)),
       ),
       body: Container(
-        decoration: AppTheme.gradientBg,
+        decoration: AppTheme.gradientBg(isDark),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -55,23 +56,23 @@ class PaywallScreen extends StatelessWidget {
                 // Benefits glass card
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassmorphicDecoration,
+                  decoration: AppTheme.glassmorphicDecoration(isDark),
                   width: double.infinity,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Smart Solo Premium Includes:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.ink),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.ink(isDark)),
                       ),
                       const SizedBox(height: 14),
-                      _buildBenefitRow(Icons.psychology_outlined, 'Tailored AI shoot plans & pose guides'),
+                      _buildBenefitRow(Icons.psychology_outlined, 'Tailored AI shoot plans & pose guides', isDark),
                       const SizedBox(height: 10),
-                      _buildBenefitRow(Icons.voice_chat_outlined, 'Real-time speak and voice coaching'),
+                      _buildBenefitRow(Icons.voice_chat_outlined, 'Real-time speak and voice coaching', isDark),
                       const SizedBox(height: 10),
-                      _buildBenefitRow(Icons.center_focus_strong_outlined, 'Aesthetic-driven automatic self-capture'),
+                      _buildBenefitRow(Icons.center_focus_strong_outlined, 'Aesthetic-driven automatic self-capture', isDark),
                       const SizedBox(height: 10),
-                      _buildBenefitRow(Icons.star_outline, 'Quality-aware best shot rankings'),
+                      _buildBenefitRow(Icons.star_outline, 'Quality-aware best shot rankings', isDark),
                     ],
                   ),
                 ),
@@ -82,6 +83,7 @@ class PaywallScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(18),
                   decoration: AppTheme.glassmorphicCustom(
                     radius: 20,
+                    isDark: isDark,
                     borderColor: AppTheme.brand2.withOpacity(0.35),
                   ),
                   width: double.infinity,
@@ -100,13 +102,13 @@ class PaywallScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Try SmartSolo PRO',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.ink),
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.ink(isDark)),
                             ),
                             Text(
                               'Start your 7-day free trial, then \$4.99/mo',
-                              style: TextStyle(color: AppTheme.muted.withOpacity(0.9), fontSize: 12),
+                              style: TextStyle(color: AppTheme.muted(isDark).withOpacity(0.9), fontSize: 12),
                             ),
                           ],
                         ),
@@ -169,7 +171,7 @@ class PaywallScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBenefitRow(IconData icon, String text) {
+  Widget _buildBenefitRow(IconData icon, String text, bool isDark) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -178,7 +180,7 @@ class PaywallScreen extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(color: AppTheme.ink, fontSize: 13, height: 1.3, fontWeight: FontWeight.w500),
+            style: TextStyle(color: AppTheme.ink(isDark), fontSize: 13, height: 1.3, fontWeight: FontWeight.w500),
           ),
         ),
       ],
