@@ -82,7 +82,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
           style: TextStyle(color: AppTheme.ink(isDark)),
         ),
         content: Text(
-          'SmartShutter needs access to your camera to take photos. Storage permission is optional but recommended for saving photos.',
+          'Smart Shutter needs access to your camera to take photos. Storage permission is optional but recommended for saving photos.',
           style: TextStyle(color: AppTheme.muted(isDark)),
         ),
         actions: [
@@ -156,12 +156,10 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF090D1A) : null,
-                  gradient: isDark ? null : AppTheme.brandGradient,
-                  border: isDark ? const Border(bottom: BorderSide(color: Colors.white24, width: 1)) : null,
+                  color: isDark ? const Color(0xFF090D1A) : Colors.white,
                   boxShadow: !isDark ? [
                     BoxShadow(
-                      color: AppTheme.brand.withOpacity(0.3),
+                      color: AppTheme.brand.withOpacity(0.1),
                       offset: const Offset(0, 4),
                       blurRadius: 8,
                     ),
@@ -176,7 +174,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : AppTheme.ink(isDark),
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -187,7 +185,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                         'Only what the app needs — your privacy is safe',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppTheme.muted(isDark) : Colors.white.withOpacity(0.8),
+                          color: AppTheme.muted(isDark),
                         ),
                       ),
                     ),

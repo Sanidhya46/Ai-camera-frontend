@@ -32,7 +32,7 @@ class SmartShutterApp extends StatelessWidget {
     return Consumer<AppState>(
       builder: (context, appState, _) {
         return MaterialApp(
-          title: 'SmartShutter',
+          title: 'Smart Shutter',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: appState.themeMode,

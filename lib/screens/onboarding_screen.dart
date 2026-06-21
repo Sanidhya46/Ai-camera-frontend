@@ -116,7 +116,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     title: 'One App.\nEndless ',
                     highlightedTitle: 'Possibilities.',
                     subtitle:
-                        'From passport photos to professional\nshots—SmartShutter works with your\nphone or any external camera.',
+                        'From passport photos to professional\nshots—Smart Shutter works with your\nphone or any external camera.',
                     imagePath: isDark
                         ? 'images/onboarding/dark_theme/3rd_image_oneapp.png'
                         : 'images/onboarding/light_theme/3rd_image_oneapp.png',

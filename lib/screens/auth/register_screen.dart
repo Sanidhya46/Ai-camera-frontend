@@ -101,6 +101,10 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     if (loginResult['success'] == true) {
       final appState = context.read<AppState>();
+      
+      // Clear any existing history immediately for a fresh account
+      await appState.clearHistory();
+
       await appState.setAuthTokens(
         accessToken: loginResult['accessToken'] as String,
         refreshToken: loginResult['refreshToken'] as String,
@@ -165,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final formHeight = constraints.maxHeight;
-                  final s = (formHeight / 480).clamp(0.0, 1.0);
+                  final s = (formHeight / 490).clamp(0.0, 1.0);
 
                   return Container(
                       decoration: BoxDecoration(
@@ -263,6 +267,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   height: 52 * s,
                   child: TextFormField(
                     controller: _firstNameController,
+                    textAlignVertical: TextAlignVertical.center,
                     style: TextStyle(color: AppTheme.ink(isDark), fontSize: 15 * s),
                     decoration: _inputDecoration(isDark, s, 'First Name', Icons.person_outline),
                     validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
@@ -276,6 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   height: 52 * s,
                   child: TextFormField(
                     controller: _lastNameController,
+                    textAlignVertical: TextAlignVertical.center,
                     style: TextStyle(color: AppTheme.ink(isDark), fontSize: 15 * s),
                     decoration: _inputDecoration(isDark, s, 'Last Name', Icons.person_outline),
                     validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
@@ -291,7 +297,8 @@ class _RegisterScreenState extends State<RegisterScreen>
           SizedBox(
             height: 52 * s,
             child: TextFormField(
-              controller: _emailController,
+            controller: _emailController,
+              textAlignVertical: TextAlignVertical.center,
               style: TextStyle(color: AppTheme.ink(isDark), fontSize: 15 * s),
               decoration: _inputDecoration(isDark, s, 'Email', Icons.email_outlined),
               keyboardType: TextInputType.emailAddress,
@@ -311,7 +318,8 @@ class _RegisterScreenState extends State<RegisterScreen>
           SizedBox(
             height: 52 * s,
             child: TextFormField(
-              controller: _passwordController,
+            controller: _passwordController,
+              textAlignVertical: TextAlignVertical.center,
               style: TextStyle(color: AppTheme.ink(isDark), fontSize: 15 * s),
               obscureText: _obscurePassword,
               decoration: _inputDecoration(isDark, s, 'Password', Icons.lock_outline).copyWith(

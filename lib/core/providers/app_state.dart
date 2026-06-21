@@ -175,6 +175,9 @@ class AppState extends ChangeNotifier {
     _accessToken = null;
     _refreshToken = null;
     _currentUser = null;
+    _captures = [];
+    _aiPoses = [];
+    await _prefs?.setString('captures', '[]');
     try {
       await _secureStorage.delete(key: 'accessToken');
       await _secureStorage.delete(key: 'refreshToken');

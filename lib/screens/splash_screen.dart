@@ -136,7 +136,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: ScaleTransition(
                   scale: _textScaleAnimation,
                   child: Text(
-                    'SmartShutter', 
+                    'Smart Shutter', 
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : Colors.black,

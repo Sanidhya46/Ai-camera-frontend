@@ -60,7 +60,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/images/app_logo.png"
+  image_path: "assets/images/app_logo_light_theme.png"
   remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the

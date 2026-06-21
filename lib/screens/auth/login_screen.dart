@@ -3,7 +3,9 @@
 /// All content scales proportionally with screen height.
 /// Integrates with hosted backend API for authentication.
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/services/auth_service.dart';
@@ -103,13 +105,31 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (!mounted) return;
 
-    // Navigate based on onboarding status
+    // Ensure home page is visible after login
+    appState.setTabIndex(0);
+
+    bool hasPermissions = true;
+    try {
+      final cameraStatus = await Permission.camera.status;
+      if (!kIsWeb) {
+        final storageStatus = await Permission.storage.status;
+        hasPermissions = cameraStatus.isGranted && storageStatus.isGranted;
+      } else {
+        hasPermissions = cameraStatus.isGranted;
+      }
+    } catch (_) {
+      // Ignore if permission check fails
+    }
+
+    if (!mounted) return;
+
+    // Navigate based on onboarding status and permissions
     if (!appState.hasSeenOnboarding) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
-    } else if (!appState.hasSeenPermissionsFlow) {
+    } else if (!appState.hasSeenPermissionsFlow || !hasPermissions) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const PermissionsScreen()),
@@ -248,6 +268,7 @@ class _LoginScreenState extends State<LoginScreen>
             height: 52 * s,
             child: TextFormField(
               controller: _emailController,
+              textAlignVertical: TextAlignVertical.center,
               style: TextStyle(color: AppTheme.ink(isDark), fontSize: 15 * s),
               decoration: _inputDecoration(isDark, s, 'Email', Icons.email_outlined),
               keyboardType: TextInputType.emailAddress,
@@ -267,7 +288,8 @@ class _LoginScreenState extends State<LoginScreen>
           SizedBox(
             height: 52 * s,
             child: TextFormField(
-              controller: _passwordController,
+            controller: _passwordController,
+              textAlignVertical: TextAlignVertical.center,
               style: TextStyle(color: AppTheme.ink(isDark), fontSize: 15 * s),
               obscureText: _obscurePassword,
               decoration: _inputDecoration(isDark, s, 'Password', Icons.lock_outline).copyWith(
