@@ -97,8 +97,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     subtitle:
                         'Get UK & India passport size photos\nin seconds. AI ensures perfect size,\nlighting & background.',
                     imagePath: isDark 
-                        ? 'images/onboarding/dark_theme/1st_image_passport.png'
-                        : 'images/onboarding/light_theme/1st_image_passport.png',
+                        ? 'assets/images/onboarding/dark_theme/1st_image_passport.png'
+                        : 'assets/images/onboarding/light_theme/1st_image_passport.png',
                     isDark: isDark,
                   ),
                   _buildPage(
@@ -108,8 +108,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     subtitle:
                         'Place your phone, relax and let AI\nguide you. We capture the best shots\nwhen you look your best.',
                     imagePath: isDark
-                        ? 'images/onboarding/dark_theme/2nd_image_smart_solo.png'
-                        : 'images/onboarding/light_theme/2nd_image_smart_solo.png',
+                        ? 'assets/images/onboarding/dark_theme/2nd_image_smart_solo.png'
+                        : 'assets/images/onboarding/light_theme/2nd_image_smart_solo.png',
                     isDark: isDark,
                   ),
                   _buildPage(
@@ -118,8 +118,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     subtitle:
                         'From passport photos to professional\nshots—Smart Shutter works with your\nphone or any external camera.',
                     imagePath: isDark
-                        ? 'images/onboarding/dark_theme/3rd_image_oneapp.png'
-                        : 'images/onboarding/light_theme/3rd_image_oneapp.png',
+                        ? 'assets/images/onboarding/dark_theme/3rd_image_oneapp.png'
+                        : 'assets/images/onboarding/light_theme/3rd_image_oneapp.png',
                     isDark: isDark,
                   ),
                 ],

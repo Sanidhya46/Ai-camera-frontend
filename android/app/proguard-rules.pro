@@ -27,3 +27,12 @@
 # Camera plugin
 -keep class androidx.camera.** { *; }
 -keep class androidx.lifecycle.** { *; }
+
+# Google Play Core (for Flutter deferred components and split install)
+-keep class com.google.android.play.core.** { *; }
+-keep interface com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
+
+# Keep Flutter Play Store Split Application
+-keep class io.flutter.embedding.android.FlutterPlayStoreSplitApplication { *; }
+-keep class io.flutter.embedding.engine.deferredcomponents.** { *; }

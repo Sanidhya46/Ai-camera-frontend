@@ -154,28 +154,36 @@ class _LoginScreenState extends State<LoginScreen>
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: isDark ? const Color(0xFF010209) : const Color(0xFFF4F6F9),
-      body: SizedBox(
-        height: screenHeight,
-        child: Column(
-          children: [
-            // ──── TOP: Image ────
-            Expanded(
-              child: Image.asset(
-                'assets/images/register_login/login_top.png',
-                width: double.infinity,
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-              ),
+      body: Stack(
+        children: [
+          // ──── TOP: Image ────
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: halfHeight,
+            child: Image.asset(
+              'assets/images/register_login/login_top.png',
+              width: double.infinity,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
             ),
+          ),
 
-            // ──── BOTTOM: Form ────
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final formHeight = constraints.maxHeight;
-                  final s = (formHeight / 450).clamp(0.0, 1.0);
+          // ──── BOTTOM: Form ────
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            top: halfHeight - MediaQuery.of(context).viewInsets.bottom,
+            left: 0,
+            right: 0,
+            height: halfHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final formHeight = constraints.maxHeight;
+                final s = (formHeight / 450).clamp(0.0, 1.0);
 
-                  return Container(
+                return Container(
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: const BorderRadius.only(
@@ -232,9 +240,8 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildForm(bool isDark, double s) {
     return Form(

@@ -159,23 +159,22 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                   color: isDark ? const Color(0xFF090D1A) : Colors.white,
                   boxShadow: !isDark ? [
                     BoxShadow(
-                      color: AppTheme.brand.withOpacity(0.1),
+                      color: Colors.black.withOpacity(0.05),
                       offset: const Offset(0, 4),
                       blurRadius: 8,
                     ),
                   ] : null,
                 ),
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 6),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Permissions',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : AppTheme.ink(isDark),
-                        letterSpacing: 1.0,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppTheme.ink(isDark) : Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -185,7 +184,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                         'Only what the app needs — your privacy is safe',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.muted(isDark),
+                          color: isDark ? AppTheme.muted(isDark) : Colors.black54,
                         ),
                       ),
                     ),
