@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
+import 'dart:async';
+import 'package:smart_shutter/core/services/auth_service.dart';
 
 class AppState extends ChangeNotifier {
   bool _isPremium = false;
@@ -21,6 +23,7 @@ class AppState extends ChangeNotifier {
   String? _accessToken;
   String? _refreshToken;
   Map<String, dynamic>? _currentUser;
+  Timer? _refreshTimer;
 
   // Active Setup selections
   String _selectedGoal = 'Travel';
@@ -30,11 +33,19 @@ class AppState extends ChangeNotifier {
   // AI poses list
   List<dynamic> _aiPoses = [];
 
+  // Smart Solo active session state
+  String? _currentSessionId;
+  Map<String, dynamic>? _currentShootPlan;
+  List<String> _poseSuggestions = [];
+  int _uploadIntervalSeconds = 3;
+  int _maxPhotos = 30;
+
   // Capture history list
   List<Map<String, dynamic>> _captures = [];
 
   // Tab navigation
   int _selectedTabIndex = 0;
+  String _galleryActiveFilter = 'passport'; // 'passport' or 'smart_solo'
 
   // ─── Getters ───
   bool get isPremium => _isPremium;
@@ -46,8 +57,14 @@ class AppState extends ChangeNotifier {
   String get selectedEnv => _selectedEnv;
   String get selectedStyle => _selectedStyle;
   List<dynamic> get aiPoses => _aiPoses;
+  String? get currentSessionId => _currentSessionId;
+  Map<String, dynamic>? get currentShootPlan => _currentShootPlan;
+  List<String> get poseSuggestions => _poseSuggestions;
+  int get uploadIntervalSeconds => _uploadIntervalSeconds;
+  int get maxPhotos => _maxPhotos;
   List<Map<String, dynamic>> get captures => _captures;
   int get selectedTabIndex => _selectedTabIndex;
+  String get galleryActiveFilter => _galleryActiveFilter;
 
   // Auth getters
   String? get accessToken => _accessToken;
@@ -94,6 +111,26 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     await _loadPrefs();
     await _loadAuthState();
+    await _loadCapturesForCurrentUser();
+    _startTokenRefreshTimer();
+  }
+
+  Future<void> _loadCapturesForCurrentUser() async {
+    final userId = _currentUser?['id'] ?? _currentUser?['email'] ?? 'guest';
+    final key = 'captures_$userId';
+    final capturesJson = _prefs?.getString(key) ?? '[]';
+    try {
+      final List<dynamic> decoded = jsonDecode(capturesJson);
+      _captures = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+    } catch (_) {
+      _captures = [];
+    }
+  }
+
+  Future<void> _saveCaptures() async {
+    final userId = _currentUser?['id'] ?? _currentUser?['email'] ?? 'guest';
+    final key = 'captures_$userId';
+    await _prefs?.setString(key, jsonEncode(_captures));
   }
 
   Future<void> _loadPrefs() async {
@@ -119,15 +156,6 @@ class AppState extends ChangeNotifier {
     _selectedGoal = _prefs?.getString('selectedGoal') ?? 'Travel';
     _selectedEnv = _prefs?.getString('selectedEnv') ?? 'Outdoor City';
     _selectedStyle = _prefs?.getString('selectedStyle') ?? 'Full body';
-    
-    // Load captures
-    final capturesJson = _prefs?.getString('captures') ?? '[]';
-    try {
-      final List<dynamic> decoded = jsonDecode(capturesJson);
-      _captures = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
-    } catch (_) {
-      _captures = [];
-    }
 
     notifyListeners();
   }
@@ -162,27 +190,84 @@ class AppState extends ChangeNotifier {
     _refreshToken = refreshToken;
     await _secureStorage.write(key: 'accessToken', value: accessToken);
     await _secureStorage.write(key: 'refreshToken', value: refreshToken);
+    _startTokenRefreshTimer();
     notifyListeners();
   }
 
   Future<void> setCurrentUser(Map<String, dynamic> user) async {
     _currentUser = user;
     await _secureStorage.write(key: 'currentUser', value: jsonEncode(user));
+    await _loadCapturesForCurrentUser();
     notifyListeners();
   }
 
+  Future<bool> refreshAccessToken() async {
+    if (_refreshToken == null || _refreshToken!.isEmpty) return false;
+    try {
+      final authService = AuthService();
+      final result = await authService.refreshToken(_refreshToken!);
+      if (result['success'] == true) {
+        final newAccess = result['accessToken'] as String? ?? '';
+        final newRefresh = result['refreshToken'] as String? ?? _refreshToken!;
+        await setAuthTokens(accessToken: newAccess, refreshToken: newRefresh);
+        return true;
+      } else if (result['error'] != null && result['error'].toString().contains('401')) {
+        await clearAuth();
+      }
+    } catch (e) {
+      print('Error refreshing token: $e');
+    }
+    return false;
+  }
+
   Future<void> clearAuth() async {
+    _refreshTimer?.cancel();
     _accessToken = null;
     _refreshToken = null;
     _currentUser = null;
     _captures = [];
     _aiPoses = [];
-    await _prefs?.setString('captures', '[]');
+    _currentSessionId = null;
+    _currentShootPlan = null;
+    _poseSuggestions = [];
+    await _loadCapturesForCurrentUser();
     try {
       await _secureStorage.delete(key: 'accessToken');
       await _secureStorage.delete(key: 'refreshToken');
       await _secureStorage.delete(key: 'currentUser');
     } catch (_) {}
+    notifyListeners();
+  }
+
+  void _startTokenRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+      if (_refreshToken != null && _refreshToken!.isNotEmpty) {
+        print('Pre-emptively refreshing token (every 5 minutes)...');
+        await refreshAccessToken();
+      }
+    });
+  }
+
+  void setCurrentSession({
+    required String sessionId,
+    required Map<String, dynamic>? shootPlan,
+    required List<String> poseSuggestions,
+    required int uploadIntervalSeconds,
+    required int maxPhotos,
+  }) {
+    _currentSessionId = sessionId;
+    _currentShootPlan = shootPlan;
+    _poseSuggestions = poseSuggestions;
+    _uploadIntervalSeconds = uploadIntervalSeconds;
+    _maxPhotos = maxPhotos;
+    notifyListeners();
+  }
+
+  void clearSession() {
+    _currentSessionId = null;
+    _currentShootPlan = null;
+    _poseSuggestions = [];
     notifyListeners();
   }
 
@@ -233,6 +318,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setGalleryActiveFilter(String filter) {
+    _galleryActiveFilter = filter;
+    notifyListeners();
+  }
+
   // ─── Captures ───
   Future<void> addCapture({
     required String path,
@@ -257,19 +347,19 @@ class AppState extends ChangeNotifier {
     };
     
     _captures.insert(0, newCapture);
-    await _prefs?.setString('captures', jsonEncode(_captures));
+    await _saveCaptures();
     notifyListeners();
   }
 
   Future<void> deleteCapture(String id) async {
     _captures.removeWhere((item) => item['id'] == id);
-    await _prefs?.setString('captures', jsonEncode(_captures));
+    await _saveCaptures();
     notifyListeners();
   }
 
   Future<void> clearHistory() async {
     _captures = [];
-    await _prefs?.setString('captures', '[]');
+    await _saveCaptures();
     notifyListeners();
   }
 }

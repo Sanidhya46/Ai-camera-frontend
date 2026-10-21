@@ -225,9 +225,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                     ),
                     // Form content
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(20 * s, 26 * s, 20 * s, 8 * s),
-                      child: _buildForm(isDark, s),
+                    Positioned.fill(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(20 * s, 26 * s, 20 * s, 8 * s),
+                          child: _buildForm(isDark, s),
+                        ),
+                      ),
                     ),
                   ],
                 ),

@@ -38,66 +38,74 @@ class _SmartSetupScreenState extends State<SmartSetupScreen> {
       body: Container(
         decoration: AppTheme.gradientBg(isDark),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                _buildSelectionCard(isDark: isDark, 
-                  title: 'What are you shooting for?',
-                  options: ['Travel', 'Portrait', 'Fashion', 'Reel'],
-                  selected: appState.selectedGoal,
-                  onSelect: (val) => context.read<AppState>().setSetupOptions(goal: val),
-                ),
-                const SizedBox(height: 12),
-                _buildSelectionCard(isDark: isDark, 
-                  title: 'Environment',
-                  options: ['Outdoor City', 'Beach', 'Nature', 'Indoor Café'],
-                  selected: appState.selectedEnv,
-                  onSelect: (val) => context.read<AppState>().setSetupOptions(env: val),
-                ),
-                const SizedBox(height: 12),
-                _buildSelectionCard(isDark: isDark, 
-                  title: 'Shot type & style',
-                  options: ['Full body', 'Half body', 'Cinematic', 'Natural'],
-                  selected: appState.selectedStyle,
-                  onSelect: (val) => context.read<AppState>().setSetupOptions(style: val),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.brand.withOpacity(0.25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        _buildSelectionCard(isDark: isDark, 
+                          title: 'What are you shooting for?',
+                          options: ['Travel', 'Portrait', 'Fashion', 'Reel'],
+                          selected: appState.selectedGoal,
+                          onSelect: (val) => context.read<AppState>().setSetupOptions(goal: val),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSelectionCard(isDark: isDark, 
+                          title: 'Environment',
+                          options: ['Outdoor City', 'Beach', 'Nature', 'Indoor Café'],
+                          selected: appState.selectedEnv,
+                          onSelect: (val) => context.read<AppState>().setSetupOptions(env: val),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSelectionCard(isDark: isDark, 
+                          title: 'Shot type & style',
+                          options: ['Full body', 'Half body', 'Cinematic', 'Natural'],
+                          selected: appState.selectedStyle,
+                          onSelect: (val) => context.read<AppState>().setSetupOptions(style: val),
                         ),
                       ],
                     ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AiPlanScreen()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.brand.withOpacity(0.25),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: const Text(
-                        'Generate AI Shoot Plan',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AiPlanScreen()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Generate AI Shoot Plan',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
         ),
       ),
     );

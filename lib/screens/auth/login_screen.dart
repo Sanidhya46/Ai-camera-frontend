@@ -124,12 +124,12 @@ class _LoginScreenState extends State<LoginScreen>
     if (!mounted) return;
 
     // Navigate based on onboarding status and permissions
+    // Bypassing onboarding for logged-in users as requested
     if (!appState.hasSeenOnboarding) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      );
-    } else if (!appState.hasSeenPermissionsFlow || !hasPermissions) {
+      await appState.setOnboardingSeen(true);
+    }
+    
+    if (!appState.hasSeenPermissionsFlow || !hasPermissions) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const PermissionsScreen()),
@@ -229,9 +229,13 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                     // Form content
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(20 * s, 26 * s, 20 * s, 8 * s),
-                      child: _buildForm(isDark, s),
+                    Positioned.fill(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(20 * s, 26 * s, 20 * s, 8 * s),
+                          child: _buildForm(isDark, s),
+                        ),
+                      ),
                     ),
                   ],
                 ),

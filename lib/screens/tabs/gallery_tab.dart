@@ -24,15 +24,14 @@ class GalleryTab extends StatefulWidget {
 }
 
 class _GalleryTabState extends State<GalleryTab> {
-  String _activeFilter = 'passport'; // 'passport' or 'smart_solo'
-
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isDark = appState.isDarkMode;
+    final activeFilter = appState.galleryActiveFilter;
     
     // Filter history items based on active tab selection
-    final filteredHistory = appState.captures.where((c) => c['type'] == _activeFilter).toList();
+    final filteredHistory = appState.captures.where((c) => c['type'] == activeFilter).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,12 +83,12 @@ class _GalleryTabState extends State<GalleryTab> {
           // Filters selection Row
           Row(
             children: [
-              _buildChip('Passport / ID', _activeFilter == 'passport', isDark, () {
-                setState(() => _activeFilter = 'passport');
+              _buildChip('Passport / ID', activeFilter == 'passport', isDark, () {
+                context.read<AppState>().setGalleryActiveFilter('passport');
               }),
               const SizedBox(width: 10),
-              _buildChip('Smart Solo Poses', _activeFilter == 'smart_solo', isDark, () {
-                setState(() => _activeFilter = 'smart_solo');
+              _buildChip('Smart Solo Poses', activeFilter == 'smart_solo', isDark, () {
+                context.read<AppState>().setGalleryActiveFilter('smart_solo');
               }),
             ],
           ),
@@ -103,13 +102,13 @@ class _GalleryTabState extends State<GalleryTab> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _activeFilter == 'passport' ? Icons.badge_outlined : Icons.person_outline,
+                          activeFilter == 'passport' ? Icons.badge_outlined : Icons.person_outline,
                           size: 48,
                           color: AppTheme.muted(isDark),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'No ${_activeFilter == 'passport' ? 'ID' : 'Solo'} photos found.',
+                          'No ${activeFilter == 'passport' ? 'ID' : 'Solo'} photos found.',
                           style: TextStyle(color: AppTheme.muted(isDark), fontSize: 14),
                         ),
                       ],

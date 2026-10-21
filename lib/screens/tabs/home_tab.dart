@@ -97,18 +97,9 @@ class HomeTab extends StatelessWidget {
             trailing: Icon(Icons.arrow_forward_ios, size: 14, color: isPremium ? AppTheme.ok : AppTheme.brand2),
             isDark: isDark,
             onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Coming Soon'),
-                  content: const Text('Smart Solo Mode is currently under development and will be available in a future update!'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK', style: TextStyle(color: AppTheme.brand)),
-                    ),
-                  ],
-                ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SmartSetupScreen()),
               );
             },
           ),
@@ -142,7 +133,10 @@ class HomeTab extends StatelessWidget {
                       final path = cap['path'] as String;
                       return GestureDetector(
                         onTap: () {
-                          context.read<AppState>().setTabIndex(1); // Switch to Gallery tab
+                          final capType = cap['type'] as String? ?? 'passport';
+                          final appState = context.read<AppState>();
+                          appState.setGalleryActiveFilter(capType);
+                          appState.setTabIndex(1); // Switch to Gallery tab
                         },
                         child: _buildThumb(path, isDark),
                       );

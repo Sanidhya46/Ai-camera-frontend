@@ -68,6 +68,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         final profileResult = await authService.getProfile(appState.accessToken!);
         if (profileResult['success'] == true && mounted) {
           await appState.setCurrentUser(profileResult['data'] as Map<String, dynamic>);
+        } else if (profileResult['error'] != null && profileResult['error'].toString().contains('401')) {
+          await appState.clearAuth();
         }
       } catch (_) {
         // Profile refresh failed — continue anyway with cached data
@@ -75,12 +77,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
       if (!mounted) return;
 
+      // Bypass onboarding for returning users
       if (!appState.hasSeenOnboarding) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
-      } else if (!appState.hasSeenPermissionsFlow) {
+        await appState.setOnboardingSeen(true);
+      }
+      
+      if (!appState.hasSeenPermissionsFlow) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const PermissionsScreen()),

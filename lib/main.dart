@@ -8,11 +8,17 @@ import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/screens/splash_screen.dart';
+import 'package:smart_shutter/core/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final appState = AppState();
   await appState.init();
+  
+  ApiService.onTokenExpired = () async {
+    final success = await appState.refreshAccessToken();
+    return success ? appState.accessToken : null;
+  };
   
   runApp(
     MultiProvider(
