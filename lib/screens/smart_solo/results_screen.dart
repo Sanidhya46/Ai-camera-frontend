@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'dart:io' show File;
 import 'dart:async';
-import 'package:path_provider/path_provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
 import 'package:smart_shutter/core/services/api_service.dart';
@@ -171,7 +170,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Future<void> _saveSelectedPhoto() async {
-    if (_topPhotos.isEmpty) return;
+    if (_topPhotos.isEmpty && widget.uploadedPhotoPaths.isEmpty) return;
     
     setState(() {
       _isSaving = true;
@@ -180,17 +179,28 @@ class _ResultsScreenState extends State<ResultsScreen> {
     try {
       final appState = Provider.of<AppState>(context, listen: false);
       
-      for (final photo in _topPhotos) {
-        final photoId = photo['photo_id'] as String;
-        final scores = photo['scores'] as Map<String, dynamic>?;
-        final localPath = widget.uploadedPhotoPaths[photoId];
-        
-        if (localPath != null) {
+      if (_topPhotos.isNotEmpty) {
+        for (final photo in _topPhotos) {
+          final photoId = photo['photo_id'] as String;
+          final scores = photo['scores'] as Map<String, dynamic>?;
+          final localPath = widget.uploadedPhotoPaths[photoId];
+          
+          if (localPath != null) {
+            await appState.addCapture(
+              path: localPath,
+              type: 'smart_solo',
+              isCompliant: true,
+              complianceReport: scores ?? {},
+            );
+          }
+        }
+      } else {
+        for (final localPath in widget.uploadedPhotoPaths.values) {
           await appState.addCapture(
             path: localPath,
             type: 'smart_solo',
             isCompliant: true,
-            complianceReport: scores ?? {},
+            complianceReport: {},
           );
         }
       }

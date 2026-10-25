@@ -47,7 +47,11 @@ class AppState extends ChangeNotifier {
   int _selectedTabIndex = 0;
   String _galleryActiveFilter = 'passport'; // 'passport' or 'smart_solo'
 
+  // Profile photo path
+  String? _profilePhotoPath;
+
   // ─── Getters ───
+  String? get profilePhotoPath => _profilePhotoPath;
   bool get isPremium => _isPremium;
   bool get hasSeenOnboarding => _hasSeenOnboarding;
   bool get hasSeenPermissionsFlow => _hasSeenPermissionsFlow;
@@ -121,9 +125,22 @@ class AppState extends ChangeNotifier {
     final capturesJson = _prefs?.getString(key) ?? '[]';
     try {
       final List<dynamic> decoded = jsonDecode(capturesJson);
-      _captures = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+      final loaded = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+      
+      // Preserve and merge any captures currently in memory (e.g. from guest captures)
+      if (_captures.isNotEmpty) {
+        for (final cap in _captures) {
+          if (!loaded.any((item) => item['id'] == cap['id'] || item['path'] == cap['path'])) {
+            loaded.insert(0, cap);
+          }
+        }
+      }
+      _captures = loaded;
+      await _saveCaptures();
     } catch (_) {
-      _captures = [];
+      if (_captures.isEmpty) {
+        _captures = [];
+      }
     }
   }
 
@@ -156,6 +173,7 @@ class AppState extends ChangeNotifier {
     _selectedGoal = _prefs?.getString('selectedGoal') ?? 'Travel';
     _selectedEnv = _prefs?.getString('selectedEnv') ?? 'Outdoor City';
     _selectedStyle = _prefs?.getString('selectedStyle') ?? 'Full body';
+    _profilePhotoPath = _prefs?.getString('profilePhotoPath');
 
     notifyListeners();
   }
@@ -178,6 +196,19 @@ class AppState extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     await _prefs?.setInt('themeModeIndex', mode.index);
+    notifyListeners();
+  }
+
+  // ─── Subscription ───
+  Future<void> togglePremium() async {
+    _isPremium = !_isPremium;
+    await _prefs?.setBool('is_premium', _isPremium);
+    notifyListeners();
+  }
+
+  Future<void> setIsPremium(bool value) async {
+    _isPremium = value;
+    await _prefs?.setBool('is_premium', _isPremium);
     notifyListeners();
   }
 
@@ -360,6 +391,16 @@ class AppState extends ChangeNotifier {
   Future<void> clearHistory() async {
     _captures = [];
     await _saveCaptures();
+    notifyListeners();
+  }
+
+  Future<void> setProfilePhotoPath(String? path) async {
+    _profilePhotoPath = path;
+    if (path != null) {
+      await _prefs?.setString('profilePhotoPath', path);
+    } else {
+      await _prefs?.remove('profilePhotoPath');
+    }
     notifyListeners();
   }
 }

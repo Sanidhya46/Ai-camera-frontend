@@ -10,10 +10,8 @@ import 'dart:io' show File, Platform;
 import 'dart:typed_data';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 
 class GalleryTab extends StatefulWidget {

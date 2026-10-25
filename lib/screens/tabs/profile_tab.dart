@@ -4,7 +4,9 @@
 /// Serves as the control center for personalization and account management within SmartShutter.
 /// Automatically fetches user profile data from auth/me endpoint on load.
 
+import 'dart:io' show File;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/theme.dart';
@@ -93,25 +95,49 @@ class _ProfileTabState extends State<ProfileTab> {
                 ? const Center(child: CircularProgressIndicator(color: AppTheme.brand))
                 : Row(
                     children: [
-                      // Avatar
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [AppTheme.brand, AppTheme.brand2],
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            appState.userInitial,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                      // Avatar with Photo Upload badge
+                      GestureDetector(
+                        onTap: () => _showPhotoPicker(context, appState),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 58,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF4F46E5),
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: appState.profilePhotoPath != null
+                                    ? Image.file(
+                                        File(appState.profilePhotoPath!),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (ctx, err, stack) => _buildDefaultAvatar(appState),
+                                      )
+                                    : _buildDefaultAvatar(appState),
+                              ),
                             ),
-                          ),
+                            // Camera edit icon badge
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF4F46E5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 13,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -149,24 +175,21 @@ class _ProfileTabState extends State<ProfileTab> {
                     ],
                   ),
             ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           
+          // ── 1. Subscription Details Menu ──
           _buildPreferencesCard(
             context,
-            'Subscription Plan',
-            isPremium ? 'Premium Active (PRO)' : 'Free Tier',
-            isPremium ? AppTheme.ok : AppTheme.brand2,
+            'Subscription Details',
+            isPremium ? 'SmartShutter Pro (Active)' : 'Free Tier · Tap to upgrade',
+            isPremium ? AppTheme.ok : const Color(0xFFF59E0B),
             isDark,
-            trailing: Switch.adaptive(
-              value: isPremium,
-              activeColor: AppTheme.brand,
-              onChanged: (val) async {
-                await context.read<AppState>().setPremium(val);
-              },
-            ),
+            trailing: const Icon(Icons.workspace_premium_outlined, color: Color(0xFFF59E0B), size: 22),
+            onTap: () => _showSubscriptionModal(context, appState),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           
+          // ── 2. App Theme ──
           _buildPreferencesCard(
             context,
             'App Theme',
@@ -176,8 +199,9 @@ class _ProfileTabState extends State<ProfileTab> {
             trailing: const Icon(Icons.palette_outlined, color: AppTheme.brand, size: 22),
             onTap: () => _showThemePicker(context, appState),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           
+          // ── 3. Voice Guidance Mode ──
           _buildPreferencesCard(
             context,
             'Voice Guidance Mode',
@@ -186,8 +210,9 @@ class _ProfileTabState extends State<ProfileTab> {
             isDark,
             trailing: const Icon(Icons.volume_up, color: AppTheme.brand, size: 22),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           
+          // ── 4. Default Passport Spec ──
           _buildPreferencesCard(
             context,
             'Default Passport Spec',
@@ -196,27 +221,51 @@ class _ProfileTabState extends State<ProfileTab> {
             isDark,
             trailing: const Icon(Icons.flag_outlined, color: AppTheme.brand, size: 22),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           
+          // ── 5. Privacy Policy ──
           _buildPreferencesCard(
             context,
-            'Privacy & Data Security',
-            '100% Secure Local Processing',
+            'Privacy Policy',
+            'Zero data retention · 100% on-device',
             AppTheme.ok,
             isDark,
             trailing: const Icon(Icons.shield_outlined, color: AppTheme.ok, size: 22),
+            onTap: () => _showPrivacyPolicyModal(context, isDark),
           ),
-          const SizedBox(height: 12),
-          
-          const SizedBox(height: 24),
+          const SizedBox(height: 10),
+
+          // ── 6. Terms of Service ──
+          _buildPreferencesCard(
+            context,
+            'Terms of Service',
+            'Usage guidelines & licensing',
+            AppTheme.ink(isDark),
+            isDark,
+            trailing: const Icon(Icons.description_outlined, color: AppTheme.brand, size: 22),
+            onTap: () => _showTermsModal(context, isDark),
+          ),
+          const SizedBox(height: 10),
+
+          // ── 7. App Version ──
+          _buildPreferencesCard(
+            context,
+            'App Version',
+            'v1.2.0 (Build 42) · Up to date',
+            AppTheme.muted(isDark),
+            isDark,
+            trailing: const Icon(Icons.verified_outlined, color: AppTheme.ok, size: 20),
+          ),
+          const SizedBox(height: 20),
           
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () async {
+                final nav = Navigator.of(context);
                 await appState.clearAuth();
                 if (mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+                  nav.pushNamedAndRemoveUntil('/', (route) => false);
                 }
               },
               style: OutlinedButton.styleFrom(
@@ -339,6 +388,354 @@ class _ProfileTabState extends State<ProfileTab> {
           trailing,
         ],
       ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar(AppState appState) {
+    return Image.asset(
+      'assets/images/home_page/user_avatar.jpg',
+      fit: BoxFit.cover,
+      errorBuilder: (ctx, err, stack) => CircleAvatar(
+        backgroundColor: const Color(0xFF4F46E5),
+        child: Text(
+          appState.userInitial,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPhotoPicker(BuildContext context, AppState appState) {
+    final isDark = appState.isDarkMode;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    'Profile Photo',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.ink(isDark),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined, color: Color(0xFF4F46E5)),
+                  title: Text('Take Photo', style: TextStyle(color: AppTheme.ink(isDark), fontWeight: FontWeight.w600)),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final picker = ImagePicker();
+                    final picked = await picker.pickImage(source: ImageSource.camera, maxWidth: 1000, maxHeight: 1000);
+                    if (picked != null) {
+                      await appState.setProfilePhotoPath(picked.path);
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined, color: Color(0xFF4F46E5)),
+                  title: Text('Choose from Gallery', style: TextStyle(color: AppTheme.ink(isDark), fontWeight: FontWeight.w600)),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final picker = ImagePicker();
+                    final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1000, maxHeight: 1000);
+                    if (picked != null) {
+                      await appState.setProfilePhotoPath(picked.path);
+                    }
+                  },
+                ),
+                if (appState.profilePhotoPath != null)
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline, color: AppTheme.danger),
+                    title: const Text('Remove Photo', style: TextStyle(color: AppTheme.danger, fontWeight: FontWeight.w600)),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await appState.setProfilePhotoPath(null);
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSubscriptionModal(BuildContext context, AppState appState) {
+    final isDark = appState.isDarkMode;
+    final isPremium = appState.isPremium;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.workspace_premium, color: Color(0xFFF59E0B), size: 26),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isPremium ? 'SmartShutter Pro (Active)' : 'Upgrade to Pro',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.ink(isDark),
+                            ),
+                          ),
+                          Text(
+                            isPremium ? 'Full access unlocked' : '\$4.99/month · Cancel anytime',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.muted(isDark),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                _buildBenefitRow(Icons.check_circle, 'Unlimited biometric AI passport exports', isDark),
+                _buildBenefitRow(Icons.check_circle, 'Multi-angle Smart Solo poses with auto-shutter', isDark),
+                _buildBenefitRow(Icons.check_circle, 'Zero watermarks and high-res download', isDark),
+                _buildBenefitRow(Icons.check_circle, 'Cloud backup & priority processing queue', isDark),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      appState.togglePremium();
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            appState.isPremium
+                                ? 'SmartShutter Pro activated!'
+                                : 'Switched to Free tier.',
+                          ),
+                          backgroundColor: const Color(0xFF4F46E5),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isPremium ? const Color(0xFF334155) : const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      isPremium ? 'Downgrade to Free' : 'Unlock Pro Access',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBenefitRow(IconData icon, String text, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, color: AppTheme.ok, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 13, color: AppTheme.ink(isDark)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicyModal(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.shield_outlined, color: AppTheme.ok, size: 24),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Privacy Policy',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.ink(isDark)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildPolicyItem('Zero Permanent Photo Storage', 'Your captured photos and face scans are analyzed on your device or in memory and never retained on remote servers without your explicit saving.', isDark),
+                _buildPolicyItem('Biometric Privacy', 'Facial geometry data is solely used to verify passport compliance guidelines (eyes open, head tilt) and immediately discarded.', isDark),
+                _buildPolicyItem('Local Device Encryption', 'Photos saved to your history remain strictly on your local device storage unless you choose to share them.', isDark),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTermsModal(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.description_outlined, color: AppTheme.brand, size: 24),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Terms of Service',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.ink(isDark)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildPolicyItem('License & Usage', 'SmartShutter provides automated AI assistance for personal and commercial photo composition and standard passport cropping.', isDark),
+                _buildPolicyItem('Official Compliance Note', 'While our algorithm aligns with standard ICAO 9303 specifications, always verify your destination country specific embassy guidelines.', isDark),
+                _buildPolicyItem('Subscriptions & Auto-Renewal', 'Pro subscriptions renew on a monthly basis and can be managed or cancelled at any time from your account settings.', isDark),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPolicyItem(String title, String desc, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.ink(isDark))),
+          const SizedBox(height: 2),
+          Text(desc, style: TextStyle(fontSize: 12, color: AppTheme.muted(isDark), height: 1.35)),
+        ],
       ),
     );
   }
