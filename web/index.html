@@ -31,6 +31,35 @@
 
   <title>smart_shutter</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* Strip Chrome autofill background, borders, and capsule bubbles */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: inherit !important;
+      transition: background-color 50000s ease-in-out 0s !important;
+      box-shadow: 0 0 0px 1000px transparent inset !important;
+      -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+      border-radius: 0px !important;
+      border: none !important;
+    }
+    input::-webkit-credentials-auto-fill-button,
+    input::-webkit-contacts-auto-fill-button,
+    input::-webkit-caps-lock-indicator {
+      visibility: hidden !important;
+      display: none !important;
+      pointer-events: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    input, textarea {
+      outline: none !important;
+      border: none !important;
+      background: transparent !important;
+    }
+  </style>
 </head>
 <body>
   <!--

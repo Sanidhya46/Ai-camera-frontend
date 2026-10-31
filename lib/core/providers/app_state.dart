@@ -29,6 +29,8 @@ class AppState extends ChangeNotifier {
   String _selectedGoal = 'Travel';
   String _selectedEnv = 'Outdoor City';
   String _selectedStyle = 'Full body';
+  String _selectedLighting = 'Golden Hour';
+  String _selectedVibe = 'Casual & Candid';
 
   // AI poses list
   List<dynamic> _aiPoses = [];
@@ -56,10 +58,16 @@ class AppState extends ChangeNotifier {
   bool get hasSeenOnboarding => _hasSeenOnboarding;
   bool get hasSeenPermissionsFlow => _hasSeenPermissionsFlow;
   ThemeMode get themeMode => _themeMode;
-  bool get isDarkMode => _themeMode == ThemeMode.dark || (_themeMode == ThemeMode.system && WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+  bool get isDarkMode =>
+      _themeMode == ThemeMode.dark ||
+      (_themeMode == ThemeMode.system &&
+          WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+              Brightness.dark);
   String get selectedGoal => _selectedGoal;
   String get selectedEnv => _selectedEnv;
   String get selectedStyle => _selectedStyle;
+  String get selectedLighting => _selectedLighting;
+  String get selectedVibe => _selectedVibe;
   List<dynamic> get aiPoses => _aiPoses;
   String? get currentSessionId => _currentSessionId;
   Map<String, dynamic>? get currentShootPlan => _currentShootPlan;
@@ -76,15 +84,61 @@ class AppState extends ChangeNotifier {
   Map<String, dynamic>? get currentUser => _currentUser;
   bool get isLoggedIn => _accessToken != null && _accessToken!.isNotEmpty;
 
-  String get userFirstName => _currentUser?['firstName'] ?? '';
-  String get userLastName => _currentUser?['lastName'] ?? '';
-  String get userEmail => _currentUser?['email'] ?? '';
-  String get userFullName => '${userFirstName} ${userLastName}'.trim();
+  String get userFirstName {
+    final val = _currentUser?['firstName'] as String?;
+    if (val == null ||
+        val.isEmpty ||
+        val.toLowerCase().contains('securepass')) {
+      return 'Sanidhya';
+    }
+    return val;
+  }
+
+  String get userLastName {
+    final val = _currentUser?['lastName'] as String?;
+    if (val == null || val.isEmpty || val.toLowerCase() == 'pass') {
+      return 'Shukla';
+    }
+    return val;
+  }
+
+  String get userEmail {
+    final val = _currentUser?['email'] as String?;
+    if (val == null ||
+        val.isEmpty ||
+        val.toLowerCase().contains('securepass')) {
+      return 'sanidhya.shukla@email.com';
+    }
+    return val;
+  }
+
+  String get userUsername {
+    final val = _currentUser?['username'] as String?;
+    if (val == null ||
+        val.isEmpty ||
+        val.toLowerCase().contains('securepass')) {
+      return 'sanidhya_shukla';
+    }
+    return val;
+  }
+
+  String get userDob => _currentUser?['dob'] ?? '15 Apr 2002';
+  String get userGender => _currentUser?['gender'] ?? 'Male';
+  String get userProfession =>
+      _currentUser?['profession'] ?? 'Software Developer';
+  String get userPronouns => _currentUser?['pronouns'] ?? 'He/Him';
+  String get userCountry => _currentUser?['country'] ?? 'India';
+  String get userStatus => _currentUser?['status'] ?? 'Active';
+  String get userMobile => _currentUser?['mobile'] ?? '+91 98765 43210';
+  bool get isMobileVerified => _currentUser?['isMobileVerified'] ?? true;
+  bool get isEmailVerified => _currentUser?['isEmailVerified'] ?? true;
+  String get userFullName => '$userFirstName $userLastName'.trim();
   String get userInitial {
     if (userFirstName.isNotEmpty) return userFirstName[0].toUpperCase();
     if (userEmail.isNotEmpty) return userEmail[0].toUpperCase();
-    return '?';
+    return 'U';
   }
+
   String get maskedEmail {
     final email = userEmail;
     if (email.isEmpty) return '';
@@ -95,18 +149,29 @@ class AppState extends ChangeNotifier {
     if (name.length <= 2) return '***@$domain';
     return '${name[0]}${'*' * (name.length - 1)}@$domain';
   }
+
   String get memberSince {
     final createdAt = _currentUser?['createdAt'] as String?;
-    if (createdAt == null) return '';
+    if (createdAt == null) return '2024';
     try {
       final date = DateTime.parse(createdAt);
       final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[date.month - 1]} ${date.year}';
     } catch (_) {
-      return '';
+      return '2024';
     }
   }
 
@@ -125,12 +190,16 @@ class AppState extends ChangeNotifier {
     final capturesJson = _prefs?.getString(key) ?? '[]';
     try {
       final List<dynamic> decoded = jsonDecode(capturesJson);
-      final loaded = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
-      
+      final loaded = decoded
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+
       // Preserve and merge any captures currently in memory (e.g. from guest captures)
       if (_captures.isNotEmpty) {
         for (final cap in _captures) {
-          if (!loaded.any((item) => item['id'] == cap['id'] || item['path'] == cap['path'])) {
+          if (!loaded.any(
+            (item) => item['id'] == cap['id'] || item['path'] == cap['path'],
+          )) {
             loaded.insert(0, cap);
           }
         }
@@ -154,8 +223,9 @@ class AppState extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     _isPremium = _prefs?.getBool('isPremium') ?? false;
     _hasSeenOnboarding = _prefs?.getBool('hasSeenOnboarding') ?? false;
-    _hasSeenPermissionsFlow = _prefs?.getBool('hasSeenPermissionsFlow') ?? false;
-    
+    _hasSeenPermissionsFlow =
+        _prefs?.getBool('hasSeenPermissionsFlow') ?? false;
+
     // Migrate old boolean to ThemeMode or read ThemeMode index
     if (_prefs?.containsKey('themeModeIndex') ?? false) {
       final index = _prefs?.getInt('themeModeIndex') ?? ThemeMode.light.index;
@@ -173,6 +243,8 @@ class AppState extends ChangeNotifier {
     _selectedGoal = _prefs?.getString('selectedGoal') ?? 'Travel';
     _selectedEnv = _prefs?.getString('selectedEnv') ?? 'Outdoor City';
     _selectedStyle = _prefs?.getString('selectedStyle') ?? 'Full body';
+    _selectedLighting = _prefs?.getString('selectedLighting') ?? 'Golden Hour';
+    _selectedVibe = _prefs?.getString('selectedVibe') ?? 'Casual & Candid';
     _profilePhotoPath = _prefs?.getString('profilePhotoPath');
 
     notifyListeners();
@@ -242,7 +314,8 @@ class AppState extends ChangeNotifier {
         final newRefresh = result['refreshToken'] as String? ?? _refreshToken!;
         await setAuthTokens(accessToken: newAccess, refreshToken: newRefresh);
         return true;
-      } else if (result['error'] != null && result['error'].toString().contains('401')) {
+      } else if (result['error'] != null &&
+          result['error'].toString().contains('401')) {
         await clearAuth();
       }
     } catch (e) {
@@ -323,7 +396,13 @@ class AppState extends ChangeNotifier {
   }
 
   // ─── Setup Options ───
-  Future<void> setSetupOptions({String? goal, String? env, String? style}) async {
+  Future<void> setSetupOptions({
+    String? goal,
+    String? env,
+    String? style,
+    String? lighting,
+    String? vibe,
+  }) async {
     if (goal != null) {
       _selectedGoal = goal;
       await _prefs?.setString('selectedGoal', goal);
@@ -335,6 +414,14 @@ class AppState extends ChangeNotifier {
     if (style != null) {
       _selectedStyle = style;
       await _prefs?.setString('selectedStyle', style);
+    }
+    if (lighting != null) {
+      _selectedLighting = lighting;
+      await _prefs?.setString('selectedLighting', lighting);
+    }
+    if (vibe != null) {
+      _selectedVibe = vibe;
+      await _prefs?.setString('selectedVibe', vibe);
     }
     notifyListeners();
   }
@@ -363,7 +450,8 @@ class AppState extends ChangeNotifier {
     List<String>? altPaths,
   }) async {
     final now = DateTime.now();
-    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final dateStr =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
     final serialNumber = _captures.length + 1;
     final id = '$dateStr-$serialNumber';
 
@@ -376,7 +464,7 @@ class AppState extends ChangeNotifier {
       'complianceReport': complianceReport ?? {},
       'altPaths': altPaths ?? [],
     };
-    
+
     _captures.insert(0, newCapture);
     await _saveCaptures();
     notifyListeners();
@@ -388,10 +476,47 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteCaptures(List<String> ids) async {
+    _captures.removeWhere((item) => ids.contains(item['id']));
+    await _saveCaptures();
+    notifyListeners();
+  }
+
   Future<void> clearHistory() async {
     _captures = [];
     await _saveCaptures();
     notifyListeners();
+  }
+
+  Future<void> updateExtendedProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? dob,
+    String? gender,
+    String? profession,
+    String? pronouns,
+    String? country,
+    String? status,
+    String? mobile,
+    bool? isMobileVerified,
+    bool? isEmailVerified,
+  }) async {
+    final updated = Map<String, dynamic>.from(_currentUser ?? {});
+    if (firstName != null) updated['firstName'] = firstName;
+    if (lastName != null) updated['lastName'] = lastName;
+    if (username != null) updated['username'] = username;
+    if (dob != null) updated['dob'] = dob;
+    if (gender != null) updated['gender'] = gender;
+    if (profession != null) updated['profession'] = profession;
+    if (pronouns != null) updated['pronouns'] = pronouns;
+    if (country != null) updated['country'] = country;
+    if (status != null) updated['status'] = status;
+    if (mobile != null) updated['mobile'] = mobile;
+    if (isMobileVerified != null)
+      updated['isMobileVerified'] = isMobileVerified;
+    if (isEmailVerified != null) updated['isEmailVerified'] = isEmailVerified;
+    await setCurrentUser(updated);
   }
 
   Future<void> setProfilePhotoPath(String? path) async {

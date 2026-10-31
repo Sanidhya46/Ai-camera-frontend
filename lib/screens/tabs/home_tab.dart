@@ -9,6 +9,7 @@ import 'dart:io' show File;
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/screens/passport/guidelines_screen.dart';
 import 'package:smart_shutter/screens/smart_solo/setup_screen.dart';
+import 'package:smart_shutter/widgets/app_header.dart';
 
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
@@ -30,116 +31,16 @@ class HomeTab extends StatelessWidget {
     final isDark = appState.isDarkMode;
     final userCaptures = appState.captures;
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ──── TOP BAR: Logo + Avatar ────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Logo
-              Row(
-                children: [
-                  Image.asset(
-                    isDark
-                        ? 'assets/images/app_logo.png'
-                        : 'assets/images/app_logo_light_theme.png',
-                    width: 28,
-                    height: 28,
-                  ),
-                  const SizedBox(width: 7),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Smart',
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontFamily: 'Outfit',
-                          ),
-                        ),
-                        const TextSpan(
-                          text: 'Shutter',
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                            color: Color(0xFF3B82F6),
-                            fontFamily: 'Outfit',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              // Profile Avatar
-              GestureDetector(
-                onTap: () {
-                  appState.setTabIndex(2); // Switch to Profile tab
-                },
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : Colors.white,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: appState.profilePhotoPath != null
-                        ? Image.file(
-                            File(appState.profilePhotoPath!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => CircleAvatar(
-                              backgroundColor: const Color(0xFF4F46E5),
-                              child: Text(
-                                appState.userInitial,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          )
-                        : Image.asset(
-                            'assets/images/home_page/user_avatar.jpg',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => CircleAvatar(
-                              backgroundColor: const Color(0xFF4F46E5),
-                              child: Text(
-                                appState.userInitial,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Column(
+      children: [
+        const AppHeader(),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
           const SizedBox(height: 8),
 
@@ -340,6 +241,9 @@ class HomeTab extends StatelessWidget {
             ),
         ],
       ),
+          ),
+        ),
+      ],
     );
   }
 
