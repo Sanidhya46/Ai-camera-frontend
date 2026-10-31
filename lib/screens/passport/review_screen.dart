@@ -11,8 +11,6 @@ import 'package:smart_shutter/core/theme.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/screens/main_layout.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:smart_shutter/screens/passport/camera_screen.dart';
@@ -36,8 +34,42 @@ class PassportReviewScreen extends StatefulWidget {
 class _PassportReviewScreenState extends State<PassportReviewScreen> {
   bool _isExporting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _ensureCaptureSaved();
+      }
+    });
+  }
+
+  void _ensureCaptureSaved() {
+    try {
+      final appState = Provider.of<AppState>(context, listen: false);
+      final alreadyExists = appState.captures.any((c) => c['path'] == widget.imagePath);
+      if (!alreadyExists) {
+        final String? errorStr = widget.report['error'] as String?;
+        final bool hasError = errorStr != null && errorStr.isNotEmpty;
+        final bool isCompliant = !hasError &&
+            widget.report['face_centred_ok'] == true &&
+            widget.report['lighting_ok'] == true &&
+            widget.report['head_pose_ok'] == true &&
+            widget.report['eyes_open_ok'] == true &&
+            widget.report['mouth_closed_ok'] == true;
+        appState.addCapture(
+          path: widget.imagePath,
+          type: 'passport',
+          isCompliant: isCompliant,
+          complianceReport: widget.report,
+        );
+      }
+    } catch (_) {}
+  }
+
   Future<void> _exportFile() async {
     setState(() => _isExporting = true);
+    _ensureCaptureSaved();
     
     try {
       // Request storage permission
@@ -166,15 +198,26 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Read compliance parameters
-    final bool isFaceCentered = widget.report['face_centred_ok'] ?? true;
-    final bool isBgAcceptable = widget.report['lighting_ok'] ?? true; // Lighting ok maps to bg
-    final bool isHeadPoseOk = widget.report['head_pose_ok'] ?? true;
-    final bool isEyesOpen = widget.report['eyes_open_ok'] ?? true;
-    final bool isMouthClosed = widget.report['mouth_closed_ok'] ?? true;
-    final bool isNaturalExp = widget.report['natural_expression_ok'] ?? true;
-    
-    final bool allCriteriaMet = isFaceCentered && isBgAcceptable && isHeadPoseOk && isEyesOpen && isMouthClosed && isNaturalExp;
+    // Read compliance parameters & error states
+    final String? errorMessage = widget.report['error'] as String?;
+    final bool hasError = errorMessage != null && errorMessage.isNotEmpty;
+    final bool isNoFaceDetected = hasError && errorMessage.toLowerCase().contains('no face');
+
+    // If face is NOT detected or there's an error, all criteria are explicitly false
+    final bool isFaceCentered = !hasError && (widget.report['face_centred_ok'] == true);
+    final bool isBgAcceptable = !hasError && (widget.report['lighting_ok'] == true);
+    final bool isHeadPoseOk = !hasError && (widget.report['head_pose_ok'] == true);
+    final bool isEyesOpen = !hasError && (widget.report['eyes_open_ok'] == true);
+    final bool isMouthClosed = !hasError && (widget.report['mouth_closed_ok'] == true);
+    final bool isNaturalExp = !hasError && (widget.report['natural_expression_ok'] == true);
+
+    final bool allCriteriaMet = !hasError &&
+        isFaceCentered &&
+        isBgAcceptable &&
+        isHeadPoseOk &&
+        isEyesOpen &&
+        isMouthClosed &&
+        isNaturalExp;
     final isDark = context.watch<AppState>().isDarkMode;
 
     return Scaffold(
@@ -184,7 +227,9 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
           children: [
             Text('Review ID Photo', style: TextStyle(fontSize: 18, color: isDark ? AppTheme.ink(isDark) : Colors.white, fontWeight: FontWeight.bold)),
             Text(
-              widget.report.containsKey('error') ? 'Review guidelines' : 'Compliance result',
+              isNoFaceDetected
+                  ? 'Face not detected'
+                  : (hasError ? 'Review guidelines' : (allCriteriaMet ? 'Compliance passed' : 'Compliance result')),
               style: TextStyle(fontSize: 12, color: isDark ? AppTheme.muted(isDark) : Colors.white.withOpacity(0.8)),
             ),
           ],
@@ -195,7 +240,7 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.download_rounded, color: isDark ? AppTheme.ink(isDark) : Colors.white),
-            onPressed: _isExporting ? null : _exportFile,
+            onPressed: (_isExporting || !allCriteriaMet) ? null : _exportFile,
             tooltip: 'Download photo',
           ),
         ],
@@ -240,10 +285,81 @@ class _PassportReviewScreenState extends State<PassportReviewScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        _buildCheckRow('Face Centering & Position', isFaceCentered, isDark, errorGuide: 'Ensure you are facing forward and your head is centered.'),
-                        _buildCheckRow('Even Studio Lighting', isBgAcceptable, isDark, errorGuide: 'Uneven Studio Lighting detected. Make sure the lighting is even and there are no shadows.'),
-                        _buildCheckRow('Direct Eye Contact', isHeadPoseOk && isEyesOpen, isDark, errorGuide: 'Look directly at the camera with eyes open.'),
-                        _buildCheckRow('Neutral Expression & Mouth Closed', isMouthClosed && isNaturalExp, isDark, errorGuide: 'Maintain a natural expression and keep your mouth closed.'),
+                        // Prominent Error Banner when face is not detected or analysis error
+                        if (hasError)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 14),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.danger.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppTheme.danger.withOpacity(0.4)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded, color: AppTheme.danger, size: 24),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isNoFaceDetected ? 'No Face Detected' : errorMessage,
+                                        style: const TextStyle(
+                                          color: AppTheme.danger,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        isNoFaceDetected
+                                            ? 'Please ensure your face is clearly visible, centered, and well-lit inside the frame.'
+                                            : 'Photo failed passport compliance checks. Please retake following the guidelines.',
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        _buildCheckRow(
+                          'Face Centering & Position',
+                          isFaceCentered,
+                          isDark,
+                          errorGuide: isNoFaceDetected
+                              ? 'No face detected in photo.'
+                              : 'Ensure you are facing forward and your head is centered.',
+                        ),
+                        _buildCheckRow(
+                          'Even Studio Lighting',
+                          isBgAcceptable,
+                          isDark,
+                          errorGuide: isNoFaceDetected
+                              ? 'No face detected to analyze lighting.'
+                              : 'Uneven Studio Lighting detected. Make sure the lighting is even and there are no shadows.',
+                        ),
+                        _buildCheckRow(
+                          'Direct Eye Contact',
+                          isHeadPoseOk && isEyesOpen,
+                          isDark,
+                          errorGuide: isNoFaceDetected
+                              ? 'No face detected to verify eye contact.'
+                              : 'Look directly at the camera with eyes open.',
+                        ),
+                        _buildCheckRow(
+                          'Neutral Expression & Mouth Closed',
+                          isMouthClosed && isNaturalExp,
+                          isDark,
+                          errorGuide: isNoFaceDetected
+                              ? 'No face detected to verify expression.'
+                              : 'Maintain a natural expression and keep your mouth closed.',
+                        ),
                         const SizedBox(height: 10),
 
                         if (allCriteriaMet)

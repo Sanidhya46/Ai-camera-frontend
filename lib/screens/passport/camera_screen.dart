@@ -515,184 +515,62 @@ class _PassportCameraScreenState extends State<PassportCameraScreen> {
   Widget _buildProcessingOverlay(bool isDark) {
     return Positioned.fill(
       child: Container(
-        color: isDark ? Colors.black.withOpacity(0.5) : Colors.white.withOpacity(0.5),
+        color: Colors.black.withOpacity(0.65),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Center(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: constraints.maxHeight * 0.92,
-                    maxWidth: constraints.maxWidth - 80,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 36),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 26),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black38,
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
                   ),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.black.withOpacity(0.55) : Colors.white.withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppTheme.brand.withOpacity(0.4),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.brand.withOpacity(0.15),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 50,
-                                height: 50,
-                                child: CircularProgressIndicator(
-                                  color: AppTheme.brand,
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              const Icon(Icons.memory, color: AppTheme.brand, size: 24),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'NEURAL ENGINE ACTIVE',
-                            style: TextStyle(
-                              color: AppTheme.brand,
-                              fontSize: 9,
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'STEP $_loadingStep/3: ${_loadingStep == 1
-                                ? "INITIALIZING SESSION..."
-                                : _loadingStep == 2
-                                ? "ANALYZING FEATURES..."
-                                : "FINALIZING COMPLIANCE..."}',
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(child: _buildOverlayStat('SYMMETRY', _loadingStep >= 2 ? 'OPTIMAL' : 'SCANNING', isDark)),
-                              const SizedBox(width: 8),
-                              Expanded(child: _buildOverlayStat('LIVENESS', _loadingStep >= 2 ? '0.9942' : 'SCANNING', isDark)),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Expanded(child: _buildOverlayStat('GEOINDEX', _loadingStep >= 1 ? 'SYNCED' : 'WAITING', isDark)),
-                              const SizedBox(width: 8),
-                              Expanded(child: _buildOverlayStat('VECTOR', _loadingStep >= 1 ? '12.4.9' : 'WAITING', isDark)),
-                            ],
-                          ),
-                          if (_loadingStep >= 2) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Expanded(child: _buildOverlayStat('SHARPNESS', _loadingStep >= 3 ? 'HIGH' : 'CHECKING', isDark)),
-                                const SizedBox(width: 8),
-                                Expanded(child: _buildOverlayStat('LIGHTING', _loadingStep >= 3 ? 'BALANCED' : 'CHECKING', isDark)),
-                              ],
-                            ),
-                          ],
-                          if (_loadingStep >= 3) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Expanded(child: _buildOverlayStat('BACKGROUND', 'CLEAR', isDark)),
-                                const SizedBox(width: 8),
-                                Expanded(child: _buildOverlayStat('EYES_OPEN', 'TRUE', isDark)),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black45,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.white.withOpacity(0.1)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  '[SYS] INITIALIZING BUFFER...',
-                                  style: TextStyle(color: AppTheme.brand, fontSize: 8, fontFamily: 'monospace'),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _loadingStep == 1
-                                      ? '[AI] SCANNING FACE VECTORS...'
-                                      : _loadingStep == 2
-                                      ? '[AI] MEASURING FEATURES...'
-                                      : '[AI] CONFIRMING...',
-                                  style: const TextStyle(color: AppTheme.brand, fontSize: 8, fontFamily: 'monospace'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: CircularProgressIndicator(
+                      color: AppTheme.brand,
+                      strokeWidth: 3,
                     ),
                   ),
-                );
-              },
+                  const SizedBox(height: 18),
+                  Text(
+                    'Analyzing Passport Photo',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.ink(isDark),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _loadingStep == 1
+                        ? 'Verifying face position & frame...'
+                        : _loadingStep == 2
+                            ? 'Checking lighting & background...'
+                            : 'Finalizing compliance check...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.muted(isDark),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
-  }
-  Widget _buildOverlayStat(String label, String value, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: isDark ? Colors.white54 : Colors.black54,
-              fontSize: 7,
-              letterSpacing: 1,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppTheme.brand,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }
@@ -702,17 +580,12 @@ class PassportGuidePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paintBg = Paint()
-      ..color = Colors.black.withOpacity(0.4)
+      ..color = Colors.black.withOpacity(0.42)
       ..style = PaintingStyle.fill;
 
     final paintLine = Paint()
-      ..color = AppTheme.brand.withOpacity(0.7)
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke;
-
-    final paintLineActive = Paint()
-      ..color = AppTheme.brand2.withOpacity(0.8)
-      ..strokeWidth = 1.5
+      ..color = Colors.white.withOpacity(0.9)
+      ..strokeWidth = 2.2
       ..style = PaintingStyle.stroke;
 
     // Outer path
@@ -720,8 +593,8 @@ class PassportGuidePainter extends CustomPainter {
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
     // Face Oval
-    final ovalWidth = size.width * 0.52;
-    final ovalHeight = size.height * 0.42;
+    final ovalWidth = size.width * 0.54;
+    final ovalHeight = size.height * 0.44;
     final ovalRect = Rect.fromCenter(
       center: Offset(size.width / 2, size.height * 0.44),
       width: ovalWidth,
@@ -733,28 +606,8 @@ class PassportGuidePainter extends CustomPainter {
     final pathBg = Path.combine(PathOperation.difference, pathOuter, pathOval);
     canvas.drawPath(pathBg, paintBg);
 
-    // Draw the oval ring
+    // Draw the clean, distraction-free oval boundary
     canvas.drawOval(ovalRect, paintLine);
-
-    // Draw centering reference lines
-    canvas.drawLine(
-      Offset(size.width / 2, size.height * 0.1),
-      Offset(size.width / 2, size.height * 0.9),
-      paintLineActive,
-    );
-
-    // Draw horizontal reference lines (Eyes region ~40% and Chin ~70%)
-    canvas.drawLine(
-      Offset(size.width / 2 - ovalWidth / 2, size.height * 0.4),
-      Offset(size.width / 2 + ovalWidth / 2, size.height * 0.4),
-      paintLineActive,
-    );
-
-    canvas.drawLine(
-      Offset(size.width / 2 - ovalWidth / 2, size.height * 0.65),
-      Offset(size.width / 2 + ovalWidth / 2, size.height * 0.65),
-      paintLineActive,
-    );
   }
 
   @override

@@ -1,18 +1,19 @@
-/// Initial splash screen shown when the app launches.
-/// Displays animated logo while checking auth and onboarding status.
-/// Routes: No auth → Register, Has auth + no onboarding → Onboarding,
-/// Has auth + onboarding done → Main Layout.
+library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:smart_shutter/core/providers/app_state.dart';
 import 'package:smart_shutter/core/services/auth_service.dart';
-import 'package:smart_shutter/core/theme.dart';
-import 'package:smart_shutter/screens/auth/register_screen.dart';
-import 'package:smart_shutter/screens/onboarding_screen.dart';
+import 'package:smart_shutter/screens/auth/auth_screen.dart';
 import 'package:smart_shutter/screens/permissions_screen.dart';
 import 'package:smart_shutter/screens/main_layout.dart';
 
+/// Initial landing / splash screen shown when the app launches.
+/// Displays splash_screen_image.png for 2.5 seconds.
+/// - If user is logged in: navigates to MainLayout (or PermissionsScreen).
+/// - If not logged in: smoothly navigates to the dedicated AuthScreen (Sign-In & Sign-Up).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -20,67 +21,56 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
-  late Animation<double> _textOpacityAnimation;
-  late Animation<double> _textScaleAnimation;
+class _SplashScreenState extends State<SplashScreen> {
+  final _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 2200),
-      vsync: this,
-    )..forward();
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.0)
-        .animate(_controller);
-        
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 220 / 360)
-        .chain(CurveTween(curve: const Interval(0.0, 1.0, curve: Curves.easeIn)))
-        .animate(_controller);
-
-    _textOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0)
-        .chain(CurveTween(curve: const Interval(0.6, 1.0, curve: Curves.easeIn)))
-        .animate(_controller);
-
-    _textScaleAnimation = Tween<double>(begin: 0.8, end: 1.0)
-        .chain(CurveTween(curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic)))
-        .animate(_controller);
-
-    _navigateToNext();
+    _startSplashSequence();
   }
 
-  Future<void> _navigateToNext() async {
-    // Wait for animation + brief hold
-    await Future.delayed(const Duration(milliseconds: 3200));
+  Future<void> _startSplashSequence() async {
+    // Show landing image for 2.5 seconds
+    await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
-    
+
     final appState = Provider.of<AppState>(context, listen: false);
-    
-    // Case 1: User has auth token — try to use it
+
+    // If user is already authenticated
     if (appState.isLoggedIn) {
-      // Try refreshing profile in background
       try {
-        final authService = AuthService();
-        final profileResult = await authService.getProfile(appState.accessToken!);
+        final profileResult = await _authService.getProfile(appState.accessToken!);
         if (profileResult['success'] == true && mounted) {
           await appState.setCurrentUser(profileResult['data'] as Map<String, dynamic>);
+        } else if (profileResult['error'] != null &&
+            profileResult['error'].toString().contains('401')) {
+          await appState.clearAuth();
         }
-      } catch (_) {
-        // Profile refresh failed — continue anyway with cached data
-      }
+      } catch (_) {}
 
       if (!mounted) return;
 
       if (!appState.hasSeenOnboarding) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
-      } else if (!appState.hasSeenPermissionsFlow) {
+        await appState.setOnboardingSeen(true);
+      }
+
+      if (!mounted) return;
+
+      bool hasPermissions = true;
+      try {
+        final cameraStatus = await Permission.camera.status;
+        if (!kIsWeb) {
+          final storageStatus = await Permission.storage.status;
+          hasPermissions = cameraStatus.isGranted && storageStatus.isGranted;
+        } else {
+          hasPermissions = cameraStatus.isGranted;
+        }
+      } catch (_) {}
+
+      if (!mounted) return;
+
+      if (!appState.hasSeenPermissionsFlow || !hasPermissions) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const PermissionsScreen()),
@@ -92,61 +82,74 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         );
       }
     } else {
-      // Case 2: No auth token — go to register
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const RegisterScreen()),
-        );
-      }
+      // User is not logged in: smoothly navigate to the dedicated AuthScreen page
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const AuthScreen(initialMode: AuthInitialMode.login),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
     }
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<AppState>().isDarkMode;
-
     return Scaffold(
-      body: Container(
-        color: isDark ? Colors.black : Colors.white,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: RotationTransition(
-                  turns: _rotationAnimation,
-                  child: Image.asset(
-                    isDark ? 'assets/images/app_logo.png' : 'assets/images/app_logo_light_theme.png',
-                    width: 64,
-                    height: 64,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              FadeTransition(
-                opacity: _textOpacityAnimation,
-                child: ScaleTransition(
-                  scale: _textScaleAnimation,
-                  child: Text(
-                    'Smart Shutter', 
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── Splash Screen Landing Image ──
+          Image.asset(
+            'assets/images/splash_screen/splash_screen_image.png',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            alignment: Alignment.center,
           ),
-        ),
+
+          // ── Subtle bottom loading indicator ──
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Starting SmartShutter...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
